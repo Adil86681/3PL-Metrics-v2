@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Geodis Shipment Tracker</title>
+<style>
+  :root {
+    --bg: #0a0c10;
+    --surface: #111318;
+    --border: #1e2230;
+    --delivered: #00e5a0;
+    --intransit: #3b9eff;
+    --outfordelivery: #f59e0b;
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --card-bg: #13161e;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    padding: 40px 32px;
+    background-image: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(59,158,255,0.08), transparent);
+  }
+  header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .brand-label {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+    font-family: 'Courier New', monospace;
+  }
+  h1 { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; color: var(--text); }
+  h1 span { color: var(--intransit); }
+  .timestamp {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 8px 14px;
+    border-radius: 6px;
+    align-self: center;
+  }
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .stat-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .stat-card.delivered::before { background: var(--delivered); }
+  .stat-card.intransit::before { background: var(--intransit); }
+  .stat-card.outdelivery::before { background: var(--outfordelivery); }
+  .stat-card.total::before { background: linear-gradient(90deg, var(--intransit), var(--delivered)); }
+  .stat-label {
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  .stat-num { font-size: 42px; font-weight: 800; line-height: 1; }
+  .stat-card.delivered .stat-num { color: var(--delivered); }
+  .stat-card.intransit .stat-num { color: var(--intransit); }
+  .stat-card.outdelivery .stat-num { color: var(--outfordelivery); }
+  .stat-card.total .stat-num { color: var(--text); }
+  .stat-sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .table-wrap {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .table-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .table-title { font-size: 15px; font-weight: 700; }
+  .filter-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .filter-btn {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    padding: 5px 13px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .filter-btn:hover, .filter-btn.active { background: var(--border); color: var(--text); }
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { background: var(--surface); }
+  th {
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 12px 20px;
+    text-align: left;
+    font-weight: 400;
+    white-space: nowrap;
+  }
+  tbody tr { border-top: 1px solid var(--border); transition: background 0.15s; }
+  tbody tr:hover { background: rgba(255,255,255,0.02); }
+  td { padding: 13px 20px; font-size: 13px; vertical-align: middle; }
+  .tracking-num { font-family: 'Courier New', monospace; font-size: 11px; color: var(--text); }
+  .carrier-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; }
+  .carrier-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .ups .carrier-dot { background: #c8973a; }
+  .dhl .carrier-dot { background: #ffcc00; }
+  .fedex .carrier-dot { background: #a000dc; }
+  .purolator .carrier-dot { background: #e31837; }
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 11px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-family: 'Courier New', monospace;
+    white-space: nowrap;
+  }
+  .status-badge.delivered { background: rgba(0,229,160,0.1); color: var(--delivered); border: 1px solid rgba(0,229,160,0.2); }
+  .status-badge.in-transit { background: rgba(59,158,255,0.1); color: var(--intransit); border: 1px solid rgba(59,158,255,0.2); }
+  .status-badge.out-for-delivery { background: rgba(245,158,11,0.1); color: var(--outfordelivery); border: 1px solid rgba(245,158,11,0.2); }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .in-transit .status-dot { animation: pulse 1.5s ease-in-out infinite; }
+  .out-for-delivery .status-dot { animation: pulse 1s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .date-text { font-size: 12px; color: var(--muted); font-family: 'Courier New', monospace; white-space: nowrap; }
+  .inv-id {
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 2px 7px;
+    border-radius: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+    display: inline-block;
+  }
+  .cat-badge {
+    font-size: 10px;
+    font-family: 'Courier New', monospace;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .hidden { display: none !important; }
+  @media (max-width: 900px) {
+    .summary { grid-template-columns: repeat(2, 1fr); }
+    body { padding: 24px 16px; }
+    th:nth-child(6), td:nth-child(6) { display: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="brand-label">Geodis · Live Shipment Tracker</div>
+    <h1>Tracking <span>Dashboard</span></h1>
+  </div>
+  <div class="timestamp">Updated · 02 Mar 2026</div>
+</header>
+
+<div class="summary">
+  <div class="stat-card total">
+    <div class="stat-label">Total Tracked</div>
+    <div class="stat-num">20</div>
+    <div class="stat-sub">shipments</div>
+  </div>
+  <div class="stat-card delivered">
+    <div class="stat-label">Delivered</div>
+    <div class="stat-num">14</div>
+    <div class="stat-sub">70% of shipments</div>
+  </div>
+  <div class="stat-card intransit">
+    <div class="stat-label">In Transit</div>
+    <div class="stat-num">5</div>
+    <div class="stat-sub">en route</div>
+  </div>
+  <div class="stat-card outdelivery">
+    <div class="stat-label">Out for Delivery</div>
+    <div class="stat-num">1</div>
+    <div class="stat-sub">arriving today</div>
+  </div>
+</div>
+
+<div class="table-wrap">
+  <div class="table-header">
+    <span class="table-title">All Shipments</span>
+    <div class="filter-row">
+      <button class="filter-btn active" onclick="filterTable('all',this)">All (20)</button>
+      <button class="filter-btn" onclick="filterTable('delivered',this)">✅ Delivered (14)</button>
+      <button class="filter-btn" onclick="filterTable('in-transit',this)">🚚 In Transit (5)</button>
+      <button class="filter-btn" onclick="filterTable('out-for-delivery',this)">📦 Out for Delivery (1)</button>
+    </div>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Tracking Number</th>
+        <th>Customer</th>
+        <th>Category</th>
+        <th>Carrier</th>
+        <th>Status</th>
+        <th>Last Update</th>
+        <th>INV Order ID</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody">
+
+      <tr data-status="delivered">
+        <td><span class="tracking-num">JJD014600012416949244</span></td>
+        <td>Benifex</td>
+        <td><span class="cat-badge">COMPUTER</span></td>
+        <td><span class="carrier-badge dhl"><span class="carrier-dot"></span>DHL</span></td>
+        <td><span class="status-badge delivered"><span class="status-dot"></span>Delivered</span></td>
+        <td class="date-text">02/02/2026 11:48</td>
+        <td><span class="inv-id" title="872bab74-8ca0-4eed-b7f0-af9e3e568581">872bab74-8ca0-4eed-b7f0-af9e3e568581</span></td>
+      </tr>
+
+      <tr data-status="in-transit">
+        <td><span class="tracking-num">1ZFW76886827542518</span></td>
+        <td>StackAdapt</td>
+        <td><span class="cat-badge">COMPUTER</span></td>
+        <td><span class="carrier-badge ups"><span class="carrier-dot"></span>UPS</span></td>
+        <td><span class="status-badge in-transit"><span class="status-dot"></span>In Transit · 42d</span></td>
+        <td class="date-text">—</td>
+        <td><span class="inv-id" title="dcd76edd-8cc1-415a-83c2-f712ea4c4e47">dcd76edd-8cc1-415a-83c2-f712ea4c4e47</span></td>
+      </tr>
+
+      <tr data-status="delivered">
+        <td><span class="tracking-num">1ZFW7688D912761166</span></td>
+        <td>Neo4j</td>
+        <td><span class="cat-badge">COMPUTER</span></td>
+        <td><span class="carrier-badge ups"><span class="carrier-dot"></span>UPS</span></td>
+        <td><span class="status-badge delivered"><span class="status-dot"></span>Delivered</span></td>
+        <td class="date-text">25/02/2026 10:43</td>
+        <td><span class="inv-id" title="c9231d63-da32-4a11-a93f-2c152acad2f2">c9231d63-da32-4a11-a93f-2c152acad2f2</span></td>
+      </tr>
+
+      <tr data-status="delivered">
+        <td><span class="tracking-num">VWY104978255</span></td>
+        <td>Prenuvo</td>
+        <td><span class="cat-badge">COMPUTER</span></td>
+        <td><span class="carrier-badge purolator"><span class="carrier-dot"></span>Purolator</span></td>
+        <td><span class="status-badge delivered"><span class="status-dot"></span>Delivered</span></td>
+        <td class="date-text">04/02/2026 12:20</td>
+        <td><span class="inv-id" title="c10c3f0f-40fa-488b-918f-60f1c9d548a5">c10c3f0f-40fa-488b-918f-60f1c9d548a5</span></td>
+      </tr>
+
+      <tr data-status="delivered">
+        <td><span class="tracking-num">1ZFW7688D935852293</span></td>
+        <td>Horizon3.ai</td>
+        <td><span class="cat-badge">COMPUTER</span></td>
+        <td><span class="carrier-badge ups"><span class="carrier-dot"></span>UPS</span></td>
+        <td><span class="status-badge delivered"><span class="status-dot"></span>Delivered</span></td>
+        <td class="date-text">25/02/2026 10:43</td>
+        <td><span class="inv-id" title="516a3e93-5b5b-46ef-9954-91449f36cde5">516a3e93-5b5b-46ef-9954-91449f36cde5</span></td>
+      </tr>
+
+      <tr data-status="in-transit">
+        <td><span class="tracking-num">1Z6395612060015211</span></td>
+        <td>Ramp</td>
+        <td><span class="cat-badge">COMPUTER</span></td>
+        <td><span class="carrier-badge ups"><span class="carrier-dot"></span>UPS</span></td>
+        <td><span class="status-badge in-transit"><span class="status-dot"></span>In Transit · 6d</span></td>
+        <td class="date-text">01/03/2026 19:15</td>
+        <td><span class="inv-id" title="90bf8787-44d8-4603-9ee6-5e1929655c84">90bf8787-44d8-4603-9ee6-5e1929655c84</span></td>
+      </tr>
+
+      <tr data-status="delivered">
+        <td><span class="tracking-num">1ZFW7688D906002121</span></td>
+        <td>—</td>
+        <td><span class="cat-badge">—</span></td>
+        <td><span class="carrier-badge ups"><span class="carrier-dot"></span>UPS</span></td>
+        <td><span class="status-badge delivered"><span class="status-dot"></span>Delivered</span></td>
+        <td class="date-text">04/02/2026 11:01</td>
+        <td><span class="inv-id">—</span></td>
+      </tr>
+
+      <tr data-status="in-transit">
+        <td><span class="tracking-num">1Z97W27R6885211483</span></td>
+        <td>—</td>
+        <td><span class="cat-badge">—</span></td>
+        <td><span class="carrier-badge ups"><span class="carrier-dot"></span>UPS</span></td>
+        <td><span class="status-badge in-transit"><span class="status-dot"></span>In Transit · 0d</span></td>
+        <td class="date-text">25/02/2026 10:00</td>
+        <td><span class="inv-id">—</span></td>
+      </tr>
+
+      <tr data-status="delivered">
+        <td><span class="tracking-num">JWD002202888</span></td>
+        <td>Wrapbook</td>
+        <td><span class="cat-badge">COMPUTER</span></td>
+        <td><span class="carrier-badge purolator"><span class="carrier-dot"></span>Purolator</span></td>
+        <td><span class="status-badge delivered"><span class="status-dot"></span>Delivered</span></td>
+        <td class="date-text">26/02/2026 12:06</td>
+        <td><span class="inv-id" title="d83957ad-6a47-4c06-9613-82eb338f3971">d83957ad-6a47-4c06-9613-82eb338f3971</span></td>
+      </tr>
+
+      <tr data-status="delivered">
+        <td><span class="tracking-num">JD014600012539632736</span></td>
+        <td>Wise</td>
+        <td><span class="cat-badge">KEYBOARD</span></td>
+        <td><span class="carrier-badge dhl"><span class="carrier-dot"></span>DHL</span></td>
+        <td><span class="status-badge delivered"><span class="status-dot"></span>Delivered</span></td>
+        <td class="date-text">27/02/2026 13:53</td>
+        <td><span class="inv-id" title="d503ec4a-2895-4573-a7da-19ec6d849066">d503ec4a-2895-4573-a7da-19ec6d849066</span></td>
+      </tr>
+
+      <tr data-status="delivered">
+        <td><span class="tracking-num">JD014600012538799601</span></td>
+        <td>Wise</td>
+        <td><span class="cat-badge">KEYBOARD</span></td>
+        <td><span class="carrier-badge dhl"><span class="carrier-dot"></span>DHL</span></td>
+        <td><span class="status-badge delivered"><span class="status-dot"></span>Delivered</span></td>
+        <td class="date-text">27/02/2026 13:53</td>
+        <td><span class="inv-id" title="d503ec4a-2895-4573-a7da-19ec6d849066">d503ec4a-2895-4573-a7da-19ec6d849066</span></td>
+      </tr>
+
+      <tr data-status="delivered">
+        <td><span class="tracking-num">JD014600012538803630</span></td>
+        <td>—</td>
+        <td><span class="cat-badge">—</span></td>
+        <td><span class="carrier-badge dhl"><span class="carrier-dot"></span>DHL</span></td>
+        <td><span class="status-badge delivered"><span class="status-dot"></span>Delivered</span></td>
+        <td class="date-text">27/02/2026 13:59</td>
+        <td><span class="inv-id">—</span></td>
+      </tr>
+
+      <tr data-status="delivered">
+        <td><span class="tracking-num">1Z502478DL22729489</span></td>
+        <td>SOCi</td>
+        <td><span class="cat-badge">DOCKING_STATION</span></td>
+        <td><span class="carrier-badge ups"><span class="carrier-dot"></span>UPS</span></td>
+        <td><span class="status-badge delivered"><span class="status-dot"></span>Delivered</span></td>
+        <td class="date-text">27/02/2026 13:53</td>
+        <td><span class="inv-id" title="81153be3-8082-48b2-a223-6df8c2f2b0a5">81153be3-8082-48b2-a223-6df8c2f2b0a5</span></td>
+      </tr>
+
+      <tr data-status="delivered">
+        <td><span class="tracking-num">497568215344</span></td>
+        <td>SOCi</td>
+        <td><span class="cat-badge">MONITOR</span></td>
+        <td><span class="carrier-badge fedex"><span class="carrier-dot"></span>FedEx</span></td>
+        <td><span class="status-badge delivered"><span class="status-dot"></span>Delivered</span></td>
+        <td class="date-text">27/02/2026 11:29</td>
+        <td><span class="inv-id" title="746377cd-4165-4fda-8ab2-6edddb232c58">746377cd-4165-4fda-8ab2-6edddb232c58</span></td>
+      </tr>
+
+      <tr data-status="delivered">
+        <td><span class="tracking-num">497568216866</span></td>
+        <td>SOCi</td>
+        <td><span class="cat-badge">MONITOR</span></td>
+        <td><span class="carrier-badge fedex"><span class="carrier-dot"></span>FedEx</span></td>
+        <td><span class="status-badge delivered"><span class="status-dot"></span>Delivered</span></td>
+        <td class="date-text">27/02/2026 11:29</td>
+        <td><span class="inv-id" title="746377cd-4165-4fda-8ab2-6edddb232c58">746377cd-4165-4fda-8ab2-6edddb232c58</span></td>
+      </tr>
+
+      <tr data-status="delivered">
+        <td><span class="tracking-num">497568217027</span></td>
+        <td>SOCi</td>
+        <td><span class="cat-badge">MONITOR</span></td>
+        <td><span class="carrier-badge fedex"><span class="carrier-dot"></span>FedEx</span></td>
+        <td><span class="status-badge delivered"><span class="status-dot"></span>Delivered</span></td>
+        <td class="date-text">27/02/2026 11:30</td>
+        <td><span class="inv-id" title="746377cd-4165-4fda-8ab2-6edddb232c58">746377cd-4165-4fda-8ab2-6edddb232c58</span></td>
+      </tr>
+
+      <tr data-status="delivered">
+        <td><span class="tracking-num">497568216833</span></td>
+        <td>SOCi</td>
+        <td><span class="cat-badge">MONITOR</span></td>
+        <td><span class="carrier-badge fedex"><span class="carrier-dot"></span>FedEx</span></td>
+        <td><span class="status-badge delivered"><span class="status-dot"></span>Delivered</span></td>
+        <td class="date-text">27/02/2026 11:29</td>
+        <td><span class="inv-id" title="746377cd-4165-4fda-8ab2-6edddb232c58">746377cd-4165-4fda-8ab2-6edddb232c58</span></td>
+      </tr>
+
+      <tr data-status="in-transit">
+        <td><span class="tracking-num">1Z505610DL60907960</span></td>
+        <td>Replicant</td>
+        <td><span class="cat-badge">MONITOR</span></td>
+        <td><span class="carrier-badge ups"><span class="carrier-dot"></span>UPS</span></td>
+        <td><span class="status-badge in-transit"><span class="status-dot"></span>In Transit · 4d</span></td>
+        <td class="date-text">28/02/2026 06:37</td>
+        <td><span class="inv-id" title="31080b5b-df3e-42ec-983b-59a5a9df94e6">31080b5b-df3e-42ec-983b-59a5a9df94e6</span></td>
+      </tr>
+
+      <tr data-status="in-transit">
+        <td><span class="tracking-num">1Z502478DL22755736</span></td>
+        <td>Replicant</td>
+        <td><span class="cat-badge">USB_C_HUB</span></td>
+        <td><span class="carrier-badge ups"><span class="carrier-dot"></span>UPS</span></td>
+        <td><span class="status-badge in-transit"><span class="status-dot"></span>In Transit · 4d</span></td>
+        <td class="date-text">28/02/2026 06:45</td>
+        <td><span class="inv-id" title="20ee9ee3-5852-4c04-8dd6-ffd399d6f13c">20ee9ee3-5852-4c04-8dd6-ffd399d6f13c</span></td>
+      </tr>
+
+      <tr data-status="out-for-delivery">
+        <td><span class="tracking-num">497568230620</span></td>
+        <td>Replicant</td>
+        <td><span class="cat-badge">LAPTOP_STAND</span></td>
+        <td><span class="carrier-badge fedex"><span class="carrier-dot"></span>FedEx</span></td>
+        <td><span class="status-badge out-for-delivery"><span class="status-dot"></span>Out for Delivery</span></td>
+        <td class="date-text">02/03/2026 06:40</td>
+        <td><span class="inv-id" title="8c6edf5b-ecd1-4509-8213-926d5ae9e1e3">8c6edf5b-ecd1-4509-8213-926d5ae9e1e3</span></td>
+      </tr>
+
+    </tbody>
+  </table>
+</div>
+
+<script>
+  function filterTable(status, btn) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('#tableBody tr').forEach(row => {
+      row.classList.toggle('hidden', status !== 'all' && row.dataset.status !== status);
+    });
+  }
+</script>
+</body>
+</html>
