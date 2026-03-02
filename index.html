@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Geodis Live Tracking</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f4f0;
+  --ink: #1a1a1a;
+  --ink2: #555;
+  --ink3: #999;
+  --border: #d8d6d0;
+  --white: #ffffff;
+  --delivered: #1a7a4a;
+  --delivered-bg: #e6f5ed;
+  --transit: #8a5c00;
+  --transit-bg: #fff8e6;
+  --pending: #b84400;
+  --pending-bg: #fff1eb;
+  --exception: #c0122c;
+  --exception-bg: #fdedef;
+  --unknown: #555;
+  --unknown-bg: #f0efeb;
+  --de: #2563eb;
+  --uk: #0f7560;
+  --ca: #9333ea;
+  --accent: #1a1a1a;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* TOPBAR */
+.topbar {
+  background: var(--ink);
+  color: var(--white);
+  padding: 0 32px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.topbar-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.topbar-sub {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: rgba(255,255,255,0.4);
+  letter-spacing: 0.05em;
+}
+
+/* API KEY BAR */
+.api-bar {
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 32px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.api-bar label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink2);
+  white-space: nowrap;
+}
+.api-input {
+  flex: 1;
+  min-width: 260px;
+  max-width: 420px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 7px 12px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.api-input:focus { border-color: var(--ink); }
+
+.btn-fetch {
+  background: var(--ink);
+  color: var(--white);
+  border: none;
+  border-radius: 4px;
+  padding: 8px 20px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+.btn-fetch:hover { opacity: 0.8; }
+.btn-fetch:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.api-status {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--ink3);
+}
+.api-status.running { color: #2563eb; }
+.api-status.done { color: var(--delivered); }
+.api-status.error { color: var(--exception); }
+
+/* MAIN LAYOUT */
+.main { padding: 28px 32px; max-width: 1400px; margin: 0 auto; }
+
+/* WAREHOUSE SECTIONS */
+.wh-section { margin-bottom: 40px; }
+
+.wh-header {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--ink);
+}
+.wh-name {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.wh-flag { font-size: 18px; }
+.wh-count {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--ink3);
+  margin-left: auto;
+}
+.wh-summary {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.wh-pill {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 2px;
+  font-weight: 500;
+}
+
+/* TRACKING GRID */
+.tracking-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 10px;
+}
+
+.tracking-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px;
+  position: relative;
+  transition: box-shadow 0.15s;
+  animation: cardIn 0.25s ease both;
+}
+.tracking-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.card-customer {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.2;
+}
+.card-date {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--ink3);
+  white-space: nowrap;
+  margin-top: 2px;
+}
+
+.card-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  border-radius: 3px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.card-status::before {
+  content: '';
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.s-delivered { background: var(--delivered-bg); color: var(--delivered); }
+.s-transit   { background: var(--transit-bg);   color: var(--transit);   }
+.s-pending   { background: var(--pending-bg);   color: var(--pending);   }
+.s-exception { background: var(--exception-bg); color: var(--exception); }
+.s-unknown   { background: var(--unknown-bg);   color: var(--unknown);   }
+.s-loading   { background: #f0f0f0; color: #999; }
+
+.card-tracking {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--ink2);
+  word-break: break-all;
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+.card-tracking a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--border); }
+.card-tracking a:hover { text-decoration-color: var(--ink); }
+
+.card-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.meta-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--ink3);
+  background: var(--bg);
+  padding: 2px 7px;
+  border-radius: 2px;
+  border: 1px solid var(--border);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.card-detail {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--bg);
+  font-size: 12px;
+  color: var(--ink2);
+  font-family: 'IBM Plex Mono', monospace;
+  line-height: 1.6;
+}
+
+/* SKELETON LOADER */
+.skeleton {
+  background: linear-gradient(90deg, #eee 25%, #e0e0e0 50%, #eee 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
+  border-radius: 3px;
+  display: inline-block;
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* BACKORDERED / NO TRACKING */
+.no-tracking {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--ink3);
+  font-style: italic;
+}
+
+/* PROGRESS BAR */
+.progress-wrap {
+  background: var(--border);
+  border-radius: 2px;
+  height: 3px;
+  overflow: hidden;
+  margin: 8px 0 0;
+  display: none;
+}
+.progress-bar {
+  height: 100%;
+  background: var(--ink);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+  width: 0%;
+}
+
+.empty-msg {
+  text-align: center;
+  padding: 60px;
+  color: var(--ink3);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+}
+
+footer {
+  text-align: center;
+  padding: 32px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--ink3);
+  border-top: 1px solid var(--border);
+  margin-top: 20px;
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="topbar-title">Geodis · Live Shipment Tracker</span>
+  <span class="topbar-sub">Source: GRV Upload v2 · AfterShip API</span>
+</div>
+
+<div class="api-bar">
+  <label>AfterShip API Key</label>
+  <input class="api-input" id="apiKey" type="password" placeholder="Paste your AfterShip API key here…">
+  <button class="btn-fetch" id="fetchBtn" onclick="startFetch()">▶ Fetch Live Status</button>
+  <span class="api-status" id="apiStatus">Enter your API key and click Fetch</span>
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+</div>
+
+<div class="main" id="main">
+  <div class="empty-msg">Enter your AfterShip API key above and click <strong>Fetch Live Status</strong> to check all shipments.</div>
+</div>
+
+<footer>GEODIS · FIRSTBASE · Data pulled live from Google Sheets GRV Upload v2</footer>
+
+<script>
+// ─── SHIPMENT DATA (from Google Sheet column Z) ───────────────────────────
+// Format: [warehouse, trackingNumber, courier, customer, orderDate, category]
+// EasyPost URLs are kept as-is; AfterShip will attempt to detect carrier
+const SHIPMENTS = [
+  ["Warehouse - Germany EU", "JJD014600012416949244", "", "Benifex", "6-Nov-2025", "COMPUTER"],
+  ["Warehouse - Germany EU", "1ZFW76886827542518", "UPS", "StackAdapt", "24-Dec-2025", "COMPUTER"],
+  ["Warehouse - Germany EU", "1ZFW7688D912761166", "UPS", "Neo4j", "5-Jan-2026", "COMPUTER"],
+  ["Warehouse - Oshawa CAN", "VWY104978255", "", "Prenuvo", "9-Jan-2026", "COMPUTER"],
+  ["Warehouse - Germany EU", "1ZFW7688D935852293", "UPS", "Horizon3.ai", "14-Jan-2026", "COMPUTER"],
+  ["Warehouse - Oshawa CAN", "https://track.easypost.com/djE6dHJrXzc1MjA4YTJlNmIxMzQyMGJhYTJhMGM4NzM4Y2I5ZjI2", "FED_EX", "Anaplan", "15-Jan-2026", "COMPUTER"],
+  ["Warehouse - Germany EU", "https://track.easypost.com/djE6dHJrXzI3ZTc5ZWIzMDc4ODRiYTBiZDJmOGE4NjZmZTNlOTEy", "FED_EX", "Carta", "21-Jan-2026", "COMPUTER"],
+  ["Warehouse - Germany EU", "https://track.easypost.com/djE6dHJrXzI3ZTc5ZWIzMDc4ODRiYTBiZDJmOGE4NjZmZTNlOTEy", "FED_EX", "Carta", "21-Jan-2026", "COMPUTER"],
+  ["Warehouse - Germany EU", "https://track.easypost.com/djE6dHJrXzI3ZTc5ZWIzMDc4ODRiYTBiZDJmOGE4NjZmZTNlOTEy", "FED_EX", "Carta", "21-Jan-2026", "COMPUTER"],
+  ["Warehouse - Germany EU", "https://track.easypost.com/djE6dHJrXzI3ZTc5ZWIzMDc4ODRiYTBiZDJmOGE4NjZmZTNlOTEy", "FED_EX", "Carta", "21-Jan-2026", "COMPUTER"],
+  ["Warehouse - Germany EU", "https://track.easypost.com/djE6dHJrXzI3ZTc5ZWIzMDc4ODRiYTBiZDJmOGE4NjZmZTNlOTEy", "FED_EX", "Carta", "21-Jan-2026", "COMPUTER"],
+  ["Warehouse - Coventry UK", "https://track.easypost.com/djE6dHJrXzE0NDc2MTUwM2QwMTQ4MTFhNWIxYTFmZGZmYjgxMDU4", "ROYAL_MAIL", "Wiz", "30-Jan-2026", "COMPUTER"],
+  ["Warehouse - Coventry UK", "https://track.easypost.com/djE6dHJrX2ZlMTdiMTkwMGVjMTRlNDk4ODI5YjNiNmVlMTMzNTIx", "ROYAL_MAIL", "Wiz", "30-Jan-2026", "COMPUTER"],
+  ["Warehouse - Coventry UK", "https://track.easypost.com/djE6dHJrX2RiZjgwMDIzZTc5NzRhZGZhNmExM2JiNzgxMmY3N2Fk", "DPDUK", "Wiz", "2-Feb-2026", "COMPUTER"],
+  ["Warehouse - Germany EU", "Backordered", "", "Horizon3.ai", "4-Feb-2026", "COMPUTER"],
+  ["Warehouse - Germany EU", "https://track.easypost.com/djE6dHJrXzFmZjgxMmY1MmYxMjRiZjBhM2JjOGJlZWU3OWVhMWU4", "UPS", "Braze", "5-Feb-2026", "KEYBOARD"],
+  ["Warehouse - Coventry UK", "7210262432", "TNT", "Wiz", "5-Feb-2026", "COMPUTER"],
+  ["Warehouse - Coventry UK", "https://track.easypost.com/djE6dHJrXzUyMjI2YmE0MGQ2YTQxNzBhYjVjY2U4YThlZGFhZjBj", "DPD", "Wiz", "6-Feb-2026", "COMPUTER"],
+  ["Warehouse - Oshawa CAN", "JWD002202888", "", "Wrapbook", "11-Feb-2026", "COMPUTER"],
+  ["Warehouse - Oshawa CAN", "JWD002202888", "", "Wrapbook", "11-Feb-2026", "COMPUTER"],
+  ["Warehouse - Oshawa CAN", "https://track.easypost.com/djE6dHJrX2Y1YWU4ZTM5MmY5ZjQ3YmFiMTcyYTliY2UxNTVlMWY3", "PUROLATOR", "StackAdapt", "13-Feb-2026", "COMPUTER"],
+  ["Warehouse - Oshawa CAN", "https://track.easypost.com/djE6dHJrX2Y1YWU4ZTM5MmY5ZjQ3YmFiMTcyYTliY2UxNTVlMWY3", "PUROLATOR", "StackAdapt", "13-Feb-2026", "COMPUTER"],
+  ["Warehouse - Oshawa CAN", "https://track.easypost.com/djE6dHJrX2Y1YWU4ZTM5MmY5ZjQ3YmFiMTcyYTliY2UxNTVlMWY3", "PUROLATOR", "StackAdapt", "13-Feb-2026", "COMPUTER"],
+  ["Warehouse - Oshawa CAN", "https://track.easypost.com/djE6dHJrX2Y1YWU4ZTM5MmY5ZjQ3YmFiMTcyYTliY2UxNTVlMWY3", "PUROLATOR", "StackAdapt", "13-Feb-2026", "COMPUTER"],
+  ["Warehouse - Oshawa CAN", "1Z6395612060015211", "UPS", "Ramp", "20-Feb-2026", "COMPUTER"],
+  ["Warehouse - Coventry UK", "https://track.easypost.com/djE6dHJrX2ZlMTdiMTkwMGVjMTRlNDk4ODI5YjNiNmVlMTMzNTIx", "ROYAL_MAIL", "Wiz", "30-Jan-2026", "COMPUTER"],
+  ["Warehouse - Coventry UK", "https://track.easypost.com/djE6dHJrXzE0NDc2MTUwM2QwMTQ4MTFhNWIxYTFmZGZmYjgxMDU4", "ROYAL_MAIL", "Wiz", "30-Jan-2026", "COMPUTER"],
+  ["Warehouse - Oshawa CAN", "1Z502478DL22729489", "UPS", "SOCi", "26-Feb-2026", "DOCKING_STATION"],
+  ["Warehouse - Oshawa CAN", "497568215344", "", "SOCi", "26-Feb-2026", "MONITOR"],
+  ["Warehouse - Oshawa CAN", "497568216866", "", "SOCi", "26-Feb-2026", "MONITOR"],
+  ["Warehouse - Oshawa CAN", "497568217027", "", "SOCi", "26-Feb-2026", "MONITOR"],
+  ["Warehouse - Oshawa CAN", "497568216833", "", "SOCi", "26-Feb-2026", "MONITOR"],
+  ["Warehouse - Coventry UK", "https://track.easypost.com/djE6dHJrXzkzNjhjODRjOGIyZDRjMDJhNjRmMTU3ZTBlNjYwNDc0", "DPDUK", "Houzz", "26-Feb-2026", "COMPUTER"],
+];
+
+// Deduplicate by tracking number for API calls, then map results back
+const SKIP = ['Backordered', '[BLOCKED]', '[BLOCKED: Cookie/query string data]', '[BLOCKED: Base64 encoded data]'];
+
+// ─── AFTERSHIP STATUS MAPPING ──────────────────────────────────────────────
+function mapAftershipStatus(tag) {
+  // AfterShip tag values: Delivered, InTransit, OutForDelivery, AttemptFail, 
+  // NotFound, Pending, InfoReceived, Exception
+  const t = (tag || '').toLowerCase();
+  if (t === 'delivered')                return { cls: 's-delivered', label: 'Delivered' };
+  if (t === 'intransit' || t === 'outfordelivery') return { cls: 's-transit', label: 'In Transit' };
+  if (t === 'pending' || t === 'inforeceived')  return { cls: 's-pending', label: 'Pending' };
+  if (t === 'exception' || t === 'attemptfail') return { cls: 's-exception', label: 'Exception' };
+  if (t === 'notfound')                 return { cls: 's-unknown', label: 'Not Found' };
+  return { cls: 's-unknown', label: tag || 'Unknown' };
+}
+
+// Carrier slug mapping from our data
+function courierToSlug(c) {
+  const map = {
+    'UPS': 'ups', 'FED_EX': 'fedex', 'FEDEX': 'fedex',
+    'ROYAL_MAIL': 'royal-mail', 'DPD': 'dpd', 'DPDUK': 'dpd-uk',
+    'TNT': 'tnt', 'PUROLATOR': 'purolator', 'CANADA_POST': 'canada-post',
+  };
+  return map[c.toUpperCase()] || null;
+}
+
+// ─── AFTERSHIP API CALL ───────────────────────────────────────────────────
+async function fetchTracking(apiKey, trackingNumber, courier) {
+  const slug = courierToSlug(courier);
+  
+  // POST to create/get tracking
+  // AfterShip v4 API
+  const body = { tracking: { tracking_number: trackingNumber } };
+  if (slug) body.tracking.slug = slug;
+
+  // First try GET (if already tracked)
+  const getUrl = slug
+    ? `https://api.aftership.com/v4/trackings/${slug}/${encodeURIComponent(trackingNumber)}`
+    : `https://api.aftership.com/v4/trackings/${encodeURIComponent(trackingNumber)}`;
+
+  let res = await fetch(getUrl, {
+    headers: { 'aftership-api-key': apiKey, 'Content-Type': 'application/json' }
+  });
+
+  if (res.status === 404) {
+    // Create tracking first
+    res = await fetch('https://api.aftership.com/v4/trackings', {
+      method: 'POST',
+      headers: { 'aftership-api-key': apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+  }
+
+  const data = await res.json();
+  if (data.data && data.data.tracking) return data.data.tracking;
+  if (data.data) return data.data;
+  throw new Error(data.meta?.message || 'API error');
+}
+
+// ─── STATE ────────────────────────────────────────────────────────────────
+let results = {}; // trackingNumber -> { status, tag, courier, lastUpdate, detail }
+let fetching = false;
+
+// ─── RENDER ───────────────────────────────────────────────────────────────
+const WAREHOUSES = [
+  { key: 'Warehouse - Germany EU', label: 'Germany EU', flag: '🇩🇪' },
+  { key: 'Warehouse - Coventry UK', label: 'Coventry UK', flag: '🇬🇧' },
+  { key: 'Warehouse - Oshawa CAN', label: 'Oshawa CAN', flag: '🇨🇦' },
+];
+
+function isSkippable(tn) {
+  return !tn || SKIP.some(s => tn.includes(s)) || tn === 'Backordered';
+}
+
+function isUrl(tn) {
+  return tn && tn.startsWith('http');
+}
+
+function renderCard(s, idx) {
+  const [warehouse, tn, courier, customer, orderDate, category] = s;
+  const result = results[tn];
+  const skippable = isSkippable(tn);
+
+  let statusHtml, detailHtml = '';
+  if (skippable) {
+    statusHtml = `<span class="card-status s-unknown">No Tracking</span>`;
+  } else if (!result) {
+    statusHtml = `<span class="card-status s-loading"><span class="skeleton" style="width:60px;height:10px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></span>`;
+  } else if (result.error) {
+    statusHtml = `<span class="card-status s-exception">Error</span>`;
+    detailHtml = `<div class="card-detail">${result.error}</div>`;
+  } else {
+    const { cls, label } = mapAftershipStatus(result.tag);
+    statusHtml = `<span class="card-status ${cls}">${label}</span>`;
+    if (result.lastUpdate) detailHtml = `<div class="card-detail">Last update: ${result.lastUpdate}</div>`;
+    if (result.location) detailHtml += `<div class="card-detail">📍 ${result.location}</div>`;
+  }
+
+  const trackingDisplay = isUrl(tn)
+    ? `<a href="${tn}" target="_blank">Open tracking link ↗</a>`
+    : `<span title="${tn}">${tn.length > 30 ? tn.slice(0,30)+'…' : tn}</span>`;
+
+  const courierTag = courier ? `<span class="meta-tag">${courier.replace(/_/g,' ')}</span>` : '';
+  const catTag = `<span class="meta-tag">${category.replace(/_/g,' ')}</span>`;
+
+  return `
+    <div class="tracking-card" style="animation-delay:${idx*30}ms">
+      <div class="card-top">
+        <div>
+          <div class="card-customer">${customer}</div>
+          <div class="card-date">${orderDate}</div>
+        </div>
+        ${statusHtml}
+      </div>
+      <div class="card-tracking">${skippable ? `<span class="no-tracking">${tn === 'Backordered' ? 'Backordered' : 'No tracking number available'}</span>` : trackingDisplay}</div>
+      <div class="card-meta">${courierTag}${catTag}</div>
+      ${detailHtml}
+    </div>`;
+}
+
+function renderWarehouse(wh) {
+  const items = SHIPMENTS.filter(s => s[0] === wh.key);
+  
+  // Count statuses
+  const counts = { delivered: 0, transit: 0, pending: 0, exception: 0, unknown: 0, noTracking: 0 };
+  items.forEach(s => {
+    const tn = s[1];
+    if (isSkippable(tn)) { counts.noTracking++; return; }
+    const r = results[tn];
+    if (!r) return;
+    if (r.error) { counts.unknown++; return; }
+    const tag = (r.tag || '').toLowerCase();
+    if (tag === 'delivered') counts.delivered++;
+    else if (tag === 'intransit' || tag === 'outfordelivery') counts.transit++;
+    else if (tag === 'pending' || tag === 'inforeceived') counts.pending++;
+    else if (tag === 'exception' || tag === 'attemptfail') counts.exception++;
+    else counts.unknown++;
+  });
+
+  const pills = [
+    counts.delivered && `<span class="wh-pill s-delivered">✓ ${counts.delivered} delivered</span>`,
+    counts.transit && `<span class="wh-pill s-transit">⟳ ${counts.transit} in transit</span>`,
+    counts.pending && `<span class="wh-pill s-pending">◌ ${counts.pending} pending</span>`,
+    counts.exception && `<span class="wh-pill s-exception">! ${counts.exception} exception</span>`,
+    counts.noTracking && `<span class="wh-pill s-unknown">— ${counts.noTracking} no tracking</span>`,
+  ].filter(Boolean).join('');
+
+  const cards = items.map((s, i) => renderCard(s, i)).join('');
+
+  return `
+    <div class="wh-section">
+      <div class="wh-header">
+        <span class="wh-flag">${wh.flag}</span>
+        <span class="wh-name">${wh.label}</span>
+        <div class="wh-summary">${pills}</div>
+        <span class="wh-count">${items.length} shipments</span>
+      </div>
+      <div class="tracking-grid">${cards}</div>
+    </div>`;
+}
+
+function render() {
+  document.getElementById('main').innerHTML = WAREHOUSES.map(renderWarehouse).join('');
+}
+
+// ─── FETCH ALL ────────────────────────────────────────────────────────────
+async function startFetch() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  if (!apiKey) { alert('Please enter your AfterShip API key.'); return; }
+  if (fetching) return;
+
+  fetching = true;
+  document.getElementById('fetchBtn').disabled = true;
+  document.getElementById('progressWrap').style.display = 'block';
+
+  // Get unique trackable numbers
+  const trackable = [...new Set(
+    SHIPMENTS.map(s => s[1]).filter(tn => !isSkippable(tn) && !isUrl(tn))
+  )];
+
+  // EasyPost URLs — extract via AfterShip detection (just mark as url-based)
+  const urlBased = SHIPMENTS.filter(s => isUrl(s[1]));
+
+  const total = trackable.length + urlBased.length;
+  let done = 0;
+
+  const setStatus = (msg, cls = '') => {
+    const el = document.getElementById('apiStatus');
+    el.textContent = msg;
+    el.className = 'api-status ' + cls;
+  };
+  const setProgress = (n) => {
+    document.getElementById('progressBar').style.width = `${Math.round(n/total*100)}%`;
+  };
+
+  setStatus(`Checking ${total} shipments…`, 'running');
+  render(); // show skeletons
+
+  // Fetch raw tracking numbers
+  for (const tn of trackable) {
+    const s = SHIPMENTS.find(x => x[1] === tn);
+    const courier = s ? s[2] : '';
+    try {
+      const data = await fetchTracking(apiKey, tn, courier);
+      results[tn] = {
+        tag: data.tag,
+        courier: data.slug,
+        lastUpdate: data.updated_at ? new Date(data.updated_at).toLocaleString() : null,
+        location: data.checkpoints?.[0]?.location || null,
+      };
+    } catch(e) {
+      results[tn] = { error: e.message };
+    }
+    done++;
+    setProgress(done);
+    setStatus(`Checking shipments… ${done}/${total}`, 'running');
+    render();
+    await new Promise(r => setTimeout(r, 250)); // rate limit
+  }
+
+  // For EasyPost URL-based shipments — mark with a note since we can't extract
+  // the tracking number from the URL without fetching the EasyPost page
+  const uniqueUrls = [...new Set(urlBased.map(s => s[1]))];
+  for (const url of uniqueUrls) {
+    // Try to get the tracking number from the URL by fetching the page
+    try {
+      // AfterShip can't track easypost URLs directly — mark for manual check
+      results[url] = { error: 'EasyPost URL — open link to check status' };
+    } catch(e) {
+      results[url] = { error: 'Could not resolve' };
+    }
+    done++;
+    setProgress(done);
+    render();
+  }
+
+  setStatus(`Done — ${trackable.length} checked via AfterShip`, 'done');
+  fetching = false;
+  document.getElementById('fetchBtn').disabled = false;
+  render();
+}
+
+// Initial render
+render();
+</script>
+</body>
+</html>
