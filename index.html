@@ -96,6 +96,22 @@ header { display: flex; align-items: flex-end; justify-content: space-between; m
 .exc-table th { text-align: left; color: var(--muted); font-size: 0.56rem; letter-spacing: 0.08em; text-transform: uppercase; padding-bottom: 8px; border-bottom: 1px solid var(--border); font-weight: 400; }
 .exc-table td { padding: 5px 0; border-bottom: 1px solid var(--border); color: var(--text); }
 .exc-badge { display: inline-block; background: rgba(248,91,122,0.15); color: var(--danger); border-radius: 4px; padding: 2px 8px; font-size: 0.6rem; }
+
+/* MODAL */
+.modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.modal-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.modal-item-info { flex: 1; min-width: 0; }
+.modal-item-id { font-size: 0.63rem; color: var(--text); font-family: "DM Mono", monospace; word-break: break-all; }
+.modal-item-org { font-size: 0.58rem; color: var(--muted); margin-top: 2px; }
+.modal-item-detail { font-size: 0.56rem; color: var(--danger); margin-top: 2px; }
+.copy-btn { background: var(--surface); border: 1px solid var(--border); color: var(--muted); font-size: 0.55rem; padding: 3px 8px; border-radius: 4px; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: all 0.15s; font-family: "DM Mono", monospace; }
+.copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+.copy-btn.copied { border-color: var(--success); color: var(--success); }
+/* CLICKABLE KPI */
+.kpi-clickable { cursor: pointer; transition: background 0.15s; }
+.kpi-clickable:hover { background: var(--surface2); }
+.kpi-click-hint { font-size: 0.54rem; color: var(--accent); margin-top: 4px; opacity: 0.7; }
+
 </style>
 </head>
 <body>
@@ -108,6 +124,14 @@ header { display: flex; align-items: flex-end; justify-content: space-between; m
   <div class="header-right">Last export<br>April 3, 2026</div>
 </header>
 
+<div class="filter-bar" id="global-filters">
+  <div class="filter-group"><div class="filter-label">Firstbase OSM</div><select class="filter-select" id="g-osm"><option value="">All OSMs</option></select></div>
+  <div class="filter-group"><div class="filter-label">Organization</div><select class="filter-select" id="g-org"><option value="">All</option></select></div>
+  <div class="filter-group"><div class="filter-label">Region</div><select class="filter-select" id="g-region"><option value="">All</option></select></div>
+  <div class="filter-summary">Showing <span id="g-count">—</span> orders</div>
+  <button class="reset-btn" onclick="resetGlobalFilters()">Reset</button>
+</div>
+
 <div class="tab-bar">
   <button class="tab-btn active" onclick="switchTab('cts')">Click to Ship</button>
   <button class="tab-btn" onclick="switchTab('cth')">Click to Home</button>
@@ -117,18 +141,11 @@ header { display: flex; align-items: flex-end; justify-content: space-between; m
 
 <!-- ====== CLICK TO SHIP ====== -->
 <div class="tab-content active" id="tab-cts">
-  <div class="filter-bar">
-    <div class="filter-group"><div class="filter-label">Firstbase OSM</div><select class="filter-select" id="cts-osm"><option value="">All OSMs</option></select></div>
-    <div class="filter-group"><div class="filter-label">Organization</div><select class="filter-select" id="cts-org"><option value="">All</option></select></div>
-    <div class="filter-group"><div class="filter-label">Region</div><select class="filter-select" id="cts-region"><option value="">All</option></select></div>
-    <div class="filter-group"><div class="filter-label">Assignee</div><select class="filter-select" id="cts-assignee"><option value="">All</option></select></div>
-    <div class="filter-summary">Showing <span id="cts-count">0</span> orders</div>
-    <button class="reset-btn" onclick="resetFilters('cts')">Reset</button>
-  </div>
+  
   <div class="kpi-row">
     <div class="kpi blue"><div class="kpi-label">Total Orders</div><div class="kpi-value" id="cts-kpi-total">0</div><div class="kpi-sub">across all assignees</div></div>
     <div class="kpi orange"><div class="kpi-label">Processing</div><div class="kpi-value" id="cts-kpi-processing">0</div><div class="kpi-sub" id="cts-kpi-processing-pct"></div></div>
-    <div class="kpi red"><div class="kpi-label">Late Orders</div><div class="kpi-value" id="cts-kpi-late">0</div><div class="kpi-sub" id="cts-kpi-late-sub"></div></div>
+    <div class="kpi red kpi-clickable" onclick="showLateOrders()"><div class="kpi-label">Late Orders</div><div class="kpi-value" id="cts-kpi-late">0</div><div class="kpi-sub" id="cts-kpi-late-sub"></div><div class="kpi-click-hint">click to view order IDs</div></div>
     <div class="kpi green"><div class="kpi-label">Ordered</div><div class="kpi-value" id="cts-kpi-ordered">0</div><div class="kpi-sub" id="cts-kpi-ordered-pct"></div></div>
   </div>
   <div class="grid-2">
@@ -144,19 +161,11 @@ header { display: flex; align-items: flex-end; justify-content: space-between; m
 
 <!-- ====== CLICK TO HOME ====== -->
 <div class="tab-content" id="tab-cth">
-  <div class="filter-bar">
-    <div class="filter-group"><div class="filter-label">Firstbase OSM</div><select class="filter-select" id="cth-osm"><option value="">All OSMs</option></select></div>
-    <div class="filter-group"><div class="filter-label">Organization</div><select class="filter-select" id="cth-org"><option value="">All</option></select></div>
-    <div class="filter-group"><div class="filter-label">Region</div><select class="filter-select" id="cth-region"><option value="">All</option></select></div>
-    <div class="filter-group"><div class="filter-label">Assignee</div><select class="filter-select" id="cth-assignee"><option value="">All</option></select></div>
-    <div class="filter-group"><div class="filter-label">Warehouse</div><select class="filter-select" id="cth-warehouse"><option value="">All</option></select></div>
-    <div class="filter-summary">Showing <span id="cth-count">0</span> orders</div>
-    <button class="reset-btn" onclick="resetFilters('cth')">Reset</button>
-  </div>
+  
   <div class="kpi-row">
     <div class="kpi blue"><div class="kpi-label">Total Orders</div><div class="kpi-value" id="cth-kpi-total">0</div><div class="kpi-sub">across all assignees</div></div>
     <div class="kpi orange"><div class="kpi-label">Out for Delivery</div><div class="kpi-value" id="cth-kpi-ofd">0</div><div class="kpi-sub" id="cth-kpi-ofd-pct"></div></div>
-    <div class="kpi red"><div class="kpi-label">Delivery Exceptions</div><div class="kpi-value" id="cth-kpi-exc">0</div><div class="kpi-sub" id="cth-kpi-exc-pct"></div></div>
+    <div class="kpi red kpi-clickable" onclick="showExceptions()"><div class="kpi-label">Delivery Exceptions</div><div class="kpi-value" id="cth-kpi-exc">0</div><div class="kpi-sub" id="cth-kpi-exc-pct"></div><div class="kpi-click-hint">click to view order IDs</div></div>
     <div class="kpi green"><div class="kpi-label">Shipped</div><div class="kpi-value" id="cth-kpi-shipped">0</div><div class="kpi-sub" id="cth-kpi-shipped-pct"></div></div>
   </div>
   <div class="grid-2">
@@ -179,18 +188,11 @@ header { display: flex; align-items: flex-end; justify-content: space-between; m
 
 <!-- ====== UNASSIGNED ====== -->
 <div class="tab-content" id="tab-unassigned">
-  <div class="filter-bar">
-    <div class="filter-group"><div class="filter-label">Firstbase OSM</div><select class="filter-select" id="ua-osm"><option value="">All OSMs</option></select></div>
-    <div class="filter-group"><div class="filter-label">Organization</div><select class="filter-select" id="ua-org"><option value="">All</option></select></div>
-    <div class="filter-group"><div class="filter-label">Country</div><select class="filter-select" id="ua-country"><option value="">All</option></select></div>
-    <div class="filter-group"><div class="filter-label">Status</div><select class="filter-select" id="ua-status"><option value="">All</option></select></div>
-    <div class="filter-summary">Showing <span id="ua-count">0</span> orders</div>
-    <button class="reset-btn" onclick="resetFilters('unassigned')">Reset</button>
-  </div>
+  
   <div class="kpi-row">
     <div class="kpi blue"><div class="kpi-label">Total Unassigned</div><div class="kpi-value" id="ua-kpi-total">0</div><div class="kpi-sub">orders without assignee</div></div>
     <div class="kpi orange"><div class="kpi-label">Organizations</div><div class="kpi-value" id="ua-kpi-orgs">0</div><div class="kpi-sub">with unassigned orders</div></div>
-    <div class="kpi red"><div class="kpi-label">Ordered</div><div class="kpi-value" id="ua-kpi-ordered">0</div><div class="kpi-sub" id="ua-kpi-ordered-pct"></div></div>
+    <div class="kpi red kpi-clickable" onclick="showUnassignedOrdered()"><div class="kpi-label">Ordered</div><div class="kpi-value" id="ua-kpi-ordered">0</div><div class="kpi-sub" id="ua-kpi-ordered-pct"></div><div class="kpi-click-hint">click to view order IDs</div></div>
     <div class="kpi green"><div class="kpi-label">Countries</div><div class="kpi-value" id="ua-kpi-countries">0</div><div class="kpi-sub">unique countries</div></div>
   </div>
   <div class="grid-3">
@@ -203,15 +205,7 @@ header { display: flex; align-items: flex-end; justify-content: space-between; m
 
 <!-- ====== INVENTORY ====== -->
 <div class="tab-content" id="tab-inventory">
-  <div class="filter-bar">
-    <div class="filter-group"><div class="filter-label">Firstbase OSM</div><select class="filter-select" id="inv-osm"><option value="">All OSMs</option></select></div>
-    <div class="filter-group"><div class="filter-label">Organization</div><select class="filter-select" id="inv-org"><option value="">All</option></select></div>
-    <div class="filter-group"><div class="filter-label">Region</div><select class="filter-select" id="inv-region"><option value="">All</option></select></div>
-    <div class="filter-group"><div class="filter-label">Category</div><select class="filter-select" id="inv-category"><option value="">All</option></select></div>
-    <div class="filter-group"><div class="filter-label">Warehouse</div><select class="filter-select" id="inv-warehouse"><option value="">All</option></select></div>
-    <div class="filter-summary">Showing <span id="inv-count">0</span> orders</div>
-    <button class="reset-btn" onclick="resetFilters('inventory')">Reset</button>
-  </div>
+  
   <div class="kpi-row">
     <div class="kpi blue"><div class="kpi-label">Total Orders</div><div class="kpi-value" id="inv-kpi-total">0</div><div class="kpi-sub">all processing</div></div>
     <div class="kpi orange"><div class="kpi-label">Total Quantity</div><div class="kpi-value" id="inv-kpi-qty">0</div><div class="kpi-sub">items to ship</div></div>
@@ -237,7 +231,7 @@ const OSM_MAP = {"Amy Smith": ["3Cloud Solutions", "8th Light", "Akasa", "Apollo
 const COLORS = ["#5b8df8","#f8a25b","#5bf8a2","#f85b7a","#f8e05b","#a25bf8","#5bf8e0","#f85bb8","#8df85b","#5bc0f8"];
 const STATUS_COLORS = {"Shipped":"#5bf8a2","Processing":"#6b7080","Ordered":"#5b8df8","Approved":"#f8a25b","Out For Delivery":"#f8a25b","Delivery Exception":"#f85b7a"};
 
-// Utility functions
+// ===== UTILITIES =====
 function countBy(arr, key) {
   const m = {};
   arr.forEach(r => { const v = r[key] || "(blank)"; m[v] = (m[v]||0) + 1; });
@@ -248,7 +242,100 @@ function topN(obj, n) {
 }
 function pct(n, t) { return t ? (n/t*100).toFixed(1)+"%" : "0%"; }
 
-// Donut chart
+// ===== GLOBAL FILTERS =====
+let currentTab = "cts";
+
+function getGlobalOsmOrgs() {
+  const osm = document.getElementById("g-osm").value;
+  if (!osm) return null;
+  return OSM_MAP[osm] || [];
+}
+
+function filterByOsm(rows, orgKey, osmOrgs) {
+  if (!osmOrgs) return rows;
+  return rows.filter(r => {
+    const org = (r[orgKey] || "").toLowerCase();
+    return osmOrgs.some(m => org.includes(m.toLowerCase()) || m.toLowerCase().includes(org));
+  });
+}
+
+function getGlobalFiltered(dataset, orgKey) {
+  const osmOrgs = getGlobalOsmOrgs();
+  const org = document.getElementById("g-org").value;
+  const region = document.getElementById("g-region").value;
+  let rows = dataset;
+  rows = filterByOsm(rows, orgKey, osmOrgs);
+  if (org) rows = rows.filter(r => r[orgKey] === org);
+  // Region key varies by dataset
+  const regionKey = dataset === DATA.unassigned ? "Country code" : "Region code";
+  if (region) rows = rows.filter(r => r[regionKey] === region);
+  return rows;
+}
+
+function populateGlobalFilters() {
+  // OSM
+  const osmSel = document.getElementById("g-osm");
+  while (osmSel.options.length > 1) osmSel.remove(1);
+  Object.keys(OSM_MAP).sort().forEach(o => {
+    const opt = document.createElement("option"); opt.value = o; opt.textContent = o; osmSel.appendChild(opt);
+  });
+
+  // Org — union of all org names, filtered by OSM
+  const osmOrgs = getGlobalOsmOrgs();
+  const allOrgs = new Set();
+  [DATA.clickToShip, DATA.clickToHome, DATA.unassigned, DATA.inventory].forEach(ds => {
+    ds.forEach(r => {
+      const org = r["Organization name"] || "";
+      if (org) {
+        if (!osmOrgs || osmOrgs.some(m => org.toLowerCase().includes(m.toLowerCase()) || m.toLowerCase().includes(org.toLowerCase()))) {
+          allOrgs.add(org);
+        }
+      }
+    });
+  });
+  const orgSel = document.getElementById("g-org");
+  const curOrg = orgSel.value;
+  while (orgSel.options.length > 1) orgSel.remove(1);
+  [...allOrgs].sort().forEach(v => {
+    const opt = document.createElement("option"); opt.value = v; opt.textContent = v; orgSel.appendChild(opt);
+  });
+  if (allOrgs.has(curOrg)) orgSel.value = curOrg; else orgSel.value = "";
+
+  // Region — union of all regions
+  const allRegions = new Set();
+  DATA.clickToShip.forEach(r => { if (r["Region code"]) allRegions.add(r["Region code"]); });
+  DATA.clickToHome.forEach(r => { if (r["Region code"]) allRegions.add(r["Region code"]); });
+  DATA.unassigned.forEach(r => { if (r["Country code"]) allRegions.add(r["Country code"]); });
+  DATA.inventory.forEach(r => { if (r["Region code"]) allRegions.add(r["Region code"]); });
+  const regSel = document.getElementById("g-region");
+  const curReg = regSel.value;
+  while (regSel.options.length > 1) regSel.remove(1);
+  [...allRegions].sort().forEach(v => {
+    const opt = document.createElement("option"); opt.value = v; opt.textContent = v; regSel.appendChild(opt);
+  });
+  if (allRegions.has(curReg)) regSel.value = curReg; else regSel.value = "";
+}
+
+function resetGlobalFilters() {
+  document.getElementById("g-osm").value = "";
+  document.getElementById("g-org").value = "";
+  document.getElementById("g-region").value = "";
+  populateGlobalFilters();
+  renderAll();
+}
+
+function updateGlobalCount() {
+  const tab = currentTab;
+  const counts = {
+    cts: filteredCache.cts.length,
+    cth: filteredCache.cth.length,
+    unassigned: filteredCache.unassigned.length,
+    inventory: filteredCache.inventory.length
+  };
+  document.getElementById("g-count").textContent = counts[tab];
+}
+
+// ===== DONUT =====
 function renderDonut(svgId, legendId, counts, total) {
   const svg = document.getElementById(svgId);
   const legend = document.getElementById(legendId);
@@ -265,15 +352,15 @@ function renderDonut(svgId, legendId, counts, total) {
     const large = slice > Math.PI ? 1 : 0;
     const color = STATUS_COLORS[name] || COLORS[i%COLORS.length];
     const path = document.createElementNS("http://www.w3.org/2000/svg","path");
-    path.setAttribute("d",`M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} L ${ix1} ${iy1} A ${ir} ${ir} 0 ${large} 0 ${ix2} ${iy2} Z`);
+    path.setAttribute("d","M "+x1+" "+y1+" A "+r+" "+r+" 0 "+large+" 1 "+x2+" "+y2+" L "+ix1+" "+iy1+" A "+ir+" "+ir+" 0 "+large+" 0 "+ix2+" "+iy2+" Z");
     path.setAttribute("fill", color);
     svg.appendChild(path);
-    legend.innerHTML += `<div class="legend-item"><div class="legend-dot" style="background:${color}"></div><div class="legend-label">${name}</div><div class="legend-value">${val}</div><div class="legend-pct">${pct(val,total)}</div></div>`;
+    legend.innerHTML += '<div class="legend-item"><div class="legend-dot" style="background:'+color+'"></div><div class="legend-label">'+name+'</div><div class="legend-value">'+val+'</div><div class="legend-pct">'+pct(val,total)+'</div></div>';
     angle += slice;
   });
 }
 
-// Bar chart
+// ===== BARS =====
 function renderBars(elId, counts, n, colorSet) {
   const el = document.getElementById(elId); el.innerHTML = "";
   const top = topN(counts, n||8);
@@ -281,11 +368,11 @@ function renderBars(elId, counts, n, colorSet) {
   const maxV = top[0][1];
   top.forEach(([name,val],i) => {
     const color = (colorSet || COLORS)[i % (colorSet || COLORS).length];
-    el.innerHTML += `<div class="bar-item"><div class="bar-name" title="${name}">${name}</div><div class="bar-track"><div class="bar-fill" style="width:${(val/maxV)*100}%;background:${color}"></div></div><div class="bar-val">${val}</div></div>`;
+    el.innerHTML += '<div class="bar-item"><div class="bar-name" title="'+name+'">'+name+'</div><div class="bar-track"><div class="bar-fill" style="width:'+(val/maxV)*100+'%;background:'+color+'"></div></div><div class="bar-val">'+val+'</div></div>';
   });
 }
 
-// Data table
+// ===== DATA TABLE =====
 const PAGE_SIZE = 8;
 const pageState = { cts: 0, cth: 0, unassigned: 0, inventory: 0 };
 const filteredCache = { cts: [], cth: [], unassigned: [], inventory: [] };
@@ -299,7 +386,7 @@ const TABLE_COLS = {
 
 function statusBadge(s) {
   const cls = {"Shipped":"shipped","Processing":"processing","Ordered":"ordered","Approved":"approved","Out For Delivery":"ofd","Delivery Exception":"exception"};
-  return `<span class="status-badge status-${cls[s]||'processing'}">${s}</span>`;
+  return '<span class="status-badge status-'+(cls[s]||'processing')+'">'+s+'</span>';
 }
 
 function renderTable(tab) {
@@ -309,18 +396,18 @@ function renderTable(tab) {
   const page = pageState[tab];
   const start = page * PAGE_SIZE;
   const pageRows = rows.slice(start, start + PAGE_SIZE);
-  let html = "<thead><tr>" + cols.map(c => `<th>${c}</th>`).join("") + "</tr></thead><tbody>";
-  pageRows.forEach(r => {
-    html += "<tr>" + cols.map(c => {
+  let html = "<thead><tr>" + cols.map(function(c){return "<th>"+c+"</th>";}).join("") + "</tr></thead><tbody>";
+  pageRows.forEach(function(r) {
+    html += "<tr>" + cols.map(function(c) {
       const v = r[c] != null ? r[c] : "";
-      if (c === "Status" || c === "Item Status") return `<td>${statusBadge(v)}</td>`;
-      return `<td title="${v}">${v}</td>`;
+      if (c === "Status" || c === "Item Status") return "<td>"+statusBadge(v)+"</td>";
+      return '<td title="'+v+'">'+v+'</td>';
     }).join("") + "</tr>";
   });
   html += "</tbody>";
   table.innerHTML = html;
   const prefix = tab === "unassigned" ? "ua" : (tab === "inventory" ? "inv" : tab);
-  document.getElementById(prefix + "-table-info").textContent = rows.length ? `Showing ${start+1}-${Math.min(start+PAGE_SIZE, rows.length)} of ${rows.length}` : "No results";
+  document.getElementById(prefix + "-table-info").textContent = rows.length ? "Showing "+(start+1)+"-"+Math.min(start+PAGE_SIZE, rows.length)+" of "+rows.length : "No results";
   document.getElementById(prefix + "-prev").disabled = page === 0;
   document.getElementById(prefix + "-next").disabled = start + PAGE_SIZE >= rows.length;
 }
@@ -331,81 +418,85 @@ function paginate(tab, dir) {
   renderTable(tab);
 }
 
-// Filter helpers
-function populateSelect(id, values) {
-  const sel = document.getElementById(id);
-  const cur = sel.value;
-  while (sel.options.length > 1) sel.remove(1);
-  [...new Set(values)].filter(Boolean).sort().forEach(v => {
-    const opt = document.createElement("option"); opt.value = v; opt.textContent = v; sel.appendChild(opt);
+// ===== MODAL =====
+function openModal(title, subtitle, items) {
+  document.getElementById("modal-title").textContent = title;
+  document.getElementById("modal-subtitle").textContent = subtitle;
+  const body = document.getElementById("modal-body");
+  let html = '<div class="modal-grid">';
+  items.forEach(function(item) {
+    html += '<div class="modal-item"><div class="modal-item-info"><div class="modal-item-id">'+item.id+'</div><div class="modal-item-org">'+item.org+'</div>';
+    if (item.detail) html += '<div class="modal-item-detail">'+item.detail+'</div>';
+    html += '</div><button class="copy-btn" onclick="copyId(this, ''+item.id+'')">Copy</button></div>';
   });
-  sel.value = cur;
+  html += '</div>';
+  body.innerHTML = html;
+  const modal = document.getElementById("orderModal");
+  modal.style.display = "flex";
 }
 
-function getOsmOrgs(osmId) {
-  const osm = document.getElementById(osmId).value;
-  if (!osm) return null; // no filter
-  return OSM_MAP[osm] || [];
+function closeModal() {
+  document.getElementById("orderModal").style.display = "none";
 }
 
-function populateOsmSelects() {
-  const osms = Object.keys(OSM_MAP).sort();
-  ["cts-osm","cth-osm","ua-osm","inv-osm"].forEach(id => {
-    const sel = document.getElementById(id);
-    while (sel.options.length > 1) sel.remove(1);
-    osms.forEach(o => { const opt = document.createElement("option"); opt.value = o; opt.textContent = o; sel.appendChild(opt); });
-  });
-}
+document.getElementById("orderModal").addEventListener("click", function(e) {
+  if (e.target === document.getElementById("orderModal")) closeModal();
+});
 
-function populateOrgWithOsm(orgSelectId, allOrgs, osmOrgs) {
-  const sel = document.getElementById(orgSelectId);
-  const cur = sel.value;
-  while (sel.options.length > 1) sel.remove(1);
-  let orgs = [...new Set(allOrgs)].filter(Boolean).sort();
-  if (osmOrgs) orgs = orgs.filter(o => osmOrgs.some(m => o.toLowerCase().includes(m.toLowerCase()) || m.toLowerCase().includes(o.toLowerCase())));
-  orgs.forEach(v => { const opt = document.createElement("option"); opt.value = v; opt.textContent = v; sel.appendChild(opt); });
-  if (orgs.includes(cur)) sel.value = cur; else sel.value = "";
-}
-
-function filterByOsm(rows, orgKey, osmOrgs) {
-  if (!osmOrgs) return rows;
-  return rows.filter(r => {
-    const org = r[orgKey] || "";
-    return osmOrgs.some(m => org.toLowerCase().includes(m.toLowerCase()) || m.toLowerCase().includes(org.toLowerCase()));
+function copyId(btn, id) {
+  navigator.clipboard.writeText(id).then(function() {
+    btn.textContent = "Copied!";
+    btn.classList.add("copied");
+    setTimeout(function() { btn.textContent = "Copy"; btn.classList.remove("copied"); }, 1500);
   });
 }
 
-function getFilter(id) { return document.getElementById(id).value; }
-
-function resetFilters(tab) {
-  const prefix = tab === "unassigned" ? "ua" : (tab === "inventory" ? "inv" : tab);
-  document.querySelectorAll(`#tab-${tab} .filter-select`).forEach(s => s.value = "");
-  pageState[tab] = 0;
-  renderTab(tab);
+function showLateOrders() {
+  const rows = filteredCache.cts.filter(function(r) { return r["Days late"] > 0; });
+  const seen = new Set(); const deduped = [];
+  rows.forEach(function(r) { if (!seen.has(r["Order ID"])) { seen.add(r["Order ID"]); deduped.push(r); } });
+  deduped.sort(function(a,b) { return b["Days late"] - a["Days late"]; });
+  const items = deduped.map(function(r) {
+    return { id: r["Order ID"], org: r["Organization name"], detail: Math.round(r["Days late"]) + " days late" };
+  });
+  openModal("Late Order IDs", deduped.length + " orders with Days Late > 0", items);
 }
 
-// ===== RENDER EACH TAB =====
+function showExceptions() {
+  const rows = filteredCache.cth.filter(function(r) { return r["Status"] === "Delivery Exception"; });
+  const seen = new Set(); const deduped = [];
+  rows.forEach(function(r) { if (!seen.has(r["Order ID"])) { seen.add(r["Order ID"]); deduped.push(r); } });
+  const items = deduped.map(function(r) {
+    return { id: r["Order ID"], org: r["Organization name"], detail: "Delivery Exception" };
+  });
+  openModal("Delivery Exception Order IDs", deduped.length + " orders with delivery exceptions", items);
+}
+
+function showUnassignedOrdered() {
+  const rows = filteredCache.unassigned.filter(function(r) { return r["Item Status"] === "Ordered"; });
+  const seen = new Set(); const deduped = [];
+  rows.forEach(function(r) { if (!seen.has(r["Order ID"])) { seen.add(r["Order ID"]); deduped.push(r); } });
+  const items = deduped.map(function(r) {
+    return { id: r["Order ID"], org: r["Organization name"], detail: "Ordered — unassigned" };
+  });
+  openModal("Unassigned Ordered IDs", deduped.length + " unassigned orders with status Ordered", items);
+}
+
+// ===== RENDER TABS =====
 function renderCTS() {
-  const osmOrgs = getOsmOrgs("cts-osm");
-  const org = getFilter("cts-org"), region = getFilter("cts-region"), assignee = getFilter("cts-assignee");
-  let rows = DATA.clickToShip;
-  rows = filterByOsm(rows, "Organization name", osmOrgs);
-  if (org) rows = rows.filter(r => r["Organization name"] === org);
-  if (region) rows = rows.filter(r => r["Region code"] === region);
-  if (assignee) rows = rows.filter(r => r["Assigned to"] === assignee);
+  let rows = getGlobalFiltered(DATA.clickToShip, "Organization name");
   filteredCache.cts = rows;
   const t = rows.length;
   const sc = countBy(rows, "Status");
   const proc = sc["Processing"]||0, ordered = sc["Ordered"]||0;
-  const late = rows.filter(r => r["Days late"] > 0);
-  const avgLate = late.length ? (late.reduce((s,r) => s + r["Days late"], 0) / late.length).toFixed(1) : 0;
+  const late = rows.filter(function(r) { return r["Days late"] > 0; });
+  const avgLate = late.length ? (late.reduce(function(s,r) { return s + r["Days late"]; }, 0) / late.length).toFixed(1) : 0;
 
-  document.getElementById("cts-count").textContent = t;
   document.getElementById("cts-kpi-total").textContent = t;
   document.getElementById("cts-kpi-processing").textContent = proc;
   document.getElementById("cts-kpi-processing-pct").textContent = pct(proc, t) + " of total";
   document.getElementById("cts-kpi-late").textContent = late.length;
-  document.getElementById("cts-kpi-late-sub").textContent = `${pct(late.length,t)} · avg ${avgLate}d late`;
+  document.getElementById("cts-kpi-late-sub").textContent = pct(late.length,t) + " · avg " + avgLate + "d late";
   document.getElementById("cts-kpi-ordered").textContent = ordered;
   document.getElementById("cts-kpi-ordered-pct").textContent = pct(ordered, t) + " of total";
 
@@ -413,31 +504,18 @@ function renderCTS() {
   renderBars("cts-cat-bars", countBy(rows, "Category"), 8);
   renderBars("cts-assignee-bars", countBy(rows, "Assigned to"), 7);
   renderBars("cts-region-bars", countBy(rows, "Region code"), 10);
-
-  populateOrgWithOsm("cts-org", DATA.clickToShip.map(r => r["Organization name"]), osmOrgs);
-  populateSelect("cts-region", DATA.clickToShip.map(r => r["Region code"]));
-  populateSelect("cts-assignee", DATA.clickToShip.map(r => r["Assigned to"]));
-
   pageState.cts = 0; renderTable("cts");
 }
 
 function renderCTH() {
-  const osmOrgs = getOsmOrgs("cth-osm");
-  const org = getFilter("cth-org"), region = getFilter("cth-region"), assignee = getFilter("cth-assignee"), wh = getFilter("cth-warehouse");
-  let rows = DATA.clickToHome;
-  rows = filterByOsm(rows, "Organization name", osmOrgs);
-  if (org) rows = rows.filter(r => r["Organization name"] === org);
-  if (region) rows = rows.filter(r => r["Region code"] === region);
-  if (assignee) rows = rows.filter(r => r["Assigned to"] === assignee);
-  if (wh) rows = rows.filter(r => r["Warehouse name"] === wh);
+  let rows = getGlobalFiltered(DATA.clickToHome, "Organization name");
   filteredCache.cth = rows;
   const t = rows.length;
   const sc = countBy(rows, "Status");
   const shipped = sc["Shipped"]||0, ofd = sc["Out For Delivery"]||0, exc = sc["Delivery Exception"]||0;
-  const late = rows.filter(r => r["Days late"] > 0);
-  const avgLate = late.length ? (late.reduce((s,r) => s + r["Days late"], 0) / late.length).toFixed(1) : 0;
+  const late = rows.filter(function(r) { return r["Days late"] > 0; });
+  const avgLate = late.length ? (late.reduce(function(s,r) { return s + r["Days late"]; }, 0) / late.length).toFixed(1) : 0;
 
-  document.getElementById("cth-count").textContent = t;
   document.getElementById("cth-kpi-total").textContent = t;
   document.getElementById("cth-kpi-ofd").textContent = ofd;
   document.getElementById("cth-kpi-ofd-pct").textContent = pct(ofd, t) + " of total";
@@ -453,34 +531,21 @@ function renderCTH() {
   renderBars("cth-cat-bars", countBy(rows, "Category"), 8);
   renderBars("cth-assignee-bars", countBy(rows, "Assigned to"), 7);
 
-  const excRows = rows.filter(r => r.Status === "Delivery Exception");
+  const excRows = rows.filter(function(r) { return r.Status === "Delivery Exception"; });
   const excOrgs = topN(countBy(excRows, "Organization name"), 8);
   const excTable = document.getElementById("cth-exc-table");
-  excTable.innerHTML = excOrgs.length ? excOrgs.map(([org,val]) => `<tr><td>${org}</td><td style="text-align:right"><span class="exc-badge">${val}</span></td></tr>`).join("") : '<tr><td colspan="2" style="color:var(--muted)">No exceptions</td></tr>';
-
-  populateOrgWithOsm("cth-org", DATA.clickToHome.map(r => r["Organization name"]), osmOrgs);
-  populateSelect("cth-region", DATA.clickToHome.map(r => r["Region code"]));
-  populateSelect("cth-assignee", DATA.clickToHome.map(r => r["Assigned to"]));
-  populateSelect("cth-warehouse", DATA.clickToHome.map(r => r["Warehouse name"]));
-
+  excTable.innerHTML = excOrgs.length ? excOrgs.map(function(e) { return '<tr><td>'+e[0]+'</td><td style="text-align:right"><span class="exc-badge">'+e[1]+'</span></td></tr>'; }).join("") : '<tr><td colspan="2" style="color:var(--muted)">No exceptions</td></tr>';
   pageState.cth = 0; renderTable("cth");
 }
 
 function renderUA() {
-  const osmOrgs = getOsmOrgs("ua-osm");
-  const org = getFilter("ua-org"), country = getFilter("ua-country"), status = getFilter("ua-status");
-  let rows = DATA.unassigned;
-  rows = filterByOsm(rows, "Organization name", osmOrgs);
-  if (org) rows = rows.filter(r => r["Organization name"] === org);
-  if (country) rows = rows.filter(r => r["Country code"] === country);
-  if (status) rows = rows.filter(r => r["Item Status"] === status);
+  let rows = getGlobalFiltered(DATA.unassigned, "Organization name");
   filteredCache.unassigned = rows;
   const t = rows.length;
   const sc = countBy(rows, "Item Status");
-  const orgs = new Set(rows.map(r => r["Organization name"]));
-  const countries = new Set(rows.map(r => r["Country code"]).filter(Boolean));
+  const orgs = new Set(rows.map(function(r) { return r["Organization name"]; }));
+  const countries = new Set(rows.map(function(r) { return r["Country code"]; }).filter(Boolean));
 
-  document.getElementById("ua-count").textContent = t;
   document.getElementById("ua-kpi-total").textContent = t;
   document.getElementById("ua-kpi-orgs").textContent = orgs.size;
   document.getElementById("ua-kpi-ordered").textContent = sc["Ordered"]||0;
@@ -490,30 +555,17 @@ function renderUA() {
   renderBars("ua-org-bars", countBy(rows, "Organization name"), 10);
   renderBars("ua-country-bars", countBy(rows, "Country code"), 10);
   renderDonut("ua-donut", "ua-donut-legend", sc, t);
-
-  populateOrgWithOsm("ua-org", DATA.unassigned.map(r => r["Organization name"]), osmOrgs);
-  populateSelect("ua-country", DATA.unassigned.map(r => r["Country code"]));
-  populateSelect("ua-status", DATA.unassigned.map(r => r["Item Status"]));
-
   pageState.unassigned = 0; renderTable("unassigned");
 }
 
 function renderINV() {
-  const osmOrgs = getOsmOrgs("inv-osm");
-  const org = getFilter("inv-org"), region = getFilter("inv-region"), cat = getFilter("inv-category"), wh = getFilter("inv-warehouse");
-  let rows = DATA.inventory;
-  rows = filterByOsm(rows, "Organization name", osmOrgs);
-  if (org) rows = rows.filter(r => r["Organization name"] === org);
-  if (region) rows = rows.filter(r => r["Region code"] === region);
-  if (cat) rows = rows.filter(r => r["Category"] === cat);
-  if (wh) rows = rows.filter(r => r["Warehouse name"] === wh);
+  let rows = getGlobalFiltered(DATA.inventory, "Organization name");
   filteredCache.inventory = rows;
   const t = rows.length;
-  const totalQty = rows.reduce((s,r) => s + (r["Quantity"]||0), 0);
-  const avgDays = t ? (rows.reduce((s,r) => s + (r["Business Days Until Ship"]||0), 0) / t).toFixed(1) : 0;
-  const newCount = rows.filter(r => r["Condition"] === "NEW").length;
+  const totalQty = rows.reduce(function(s,r) { return s + (r["Quantity"]||0); }, 0);
+  const avgDays = t ? (rows.reduce(function(s,r) { return s + (r["Business Days Until Ship"]||0); }, 0) / t).toFixed(1) : 0;
+  const newCount = rows.filter(function(r) { return r["Condition"] === "NEW"; }).length;
 
-  document.getElementById("inv-count").textContent = t;
   document.getElementById("inv-kpi-total").textContent = t;
   document.getElementById("inv-kpi-qty").textContent = totalQty;
   document.getElementById("inv-kpi-avgdays").textContent = avgDays;
@@ -524,17 +576,33 @@ function renderINV() {
   renderBars("inv-wh-bars", countBy(rows, "Warehouse name"), 8);
   renderBars("inv-org-bars", countBy(rows, "Organization name"), 8);
   renderBars("inv-region-bars", countBy(rows, "Region code"), 10);
-
-  populateOrgWithOsm("inv-org", DATA.inventory.map(r => r["Organization name"]), osmOrgs);
-  populateSelect("inv-region", DATA.inventory.map(r => r["Region code"]));
-  populateSelect("inv-category", DATA.inventory.map(r => r["Category"]));
-  populateSelect("inv-warehouse", DATA.inventory.map(r => r["Warehouse name"]));
-
   pageState.inventory = 0; renderTable("inventory");
 }
 
-function renderTab(tab) {
-  if (tab === "cts") renderCTS();
+function renderAll() {
+  renderCTS(); renderCTH(); renderUA(); renderINV();
+  updateGlobalCount();
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll(".tab-btn").forEach(function(b,i) { b.classList.toggle("active", ["cts","cth","unassigned","inventory"][i] === tab); });
+  document.querySelectorAll(".tab-content").forEach(function(tc) { tc.classList.remove("active"); });
+  document.getElementById("tab-" + tab).classList.add("active");
+  updateGlobalCount();
+}
+
+// ===== EVENT LISTENERS =====
+["g-osm","g-org","g-region"].forEach(function(id) {
+  document.getElementById(id).addEventListener("change", function() {
+    if (id === "g-osm") populateGlobalFilters();
+    renderAll();
+  });
+});
+
+// ===== INIT =====
+populateGlobalFilters();
+renderAll();
   else if (tab === "cth") renderCTH();
   else if (tab === "unassigned") renderUA();
   else if (tab === "inventory") renderINV();
@@ -557,5 +625,20 @@ function switchTab(tab) {
 populateOsmSelects();
 renderCTS();
 </script>
+
+<!-- ORDER ID MODAL -->
+<div id="orderModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;width:600px;max-width:95vw;max-height:80vh;display:flex;flex-direction:column;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);">
+      <div>
+        <div style="font-family:Syne,sans-serif;font-weight:700;font-size:1rem;" id="modal-title"></div>
+        <div style="font-size:0.6rem;color:var(--muted);margin-top:3px;" id="modal-subtitle"></div>
+      </div>
+      <button onclick="closeModal()" style="background:none;border:1px solid var(--border);color:var(--muted);font-size:0.9rem;width:28px;height:28px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;">&#x2715;</button>
+    </div>
+    <div style="overflow-y:auto;padding:16px 20px;" id="modal-body"></div>
+  </div>
+</div>
+
 </body>
 </html>
