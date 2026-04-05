@@ -572,18 +572,22 @@ function renderCTH() {
   const t = rows.length;
   const sc = countBy(rows, "Status");
   const shipped = sc["Shipped"]||0, ofd = sc["Out For Delivery"]||0, exc = sc["Delivery Exception"]||0;
+  var excIds = new Set(); rows.filter(function(r) { return r["Status"] === "Delivery Exception"; }).forEach(function(r) { excIds.add(r["Order ID"]); });
+  var excUniqueCount = excIds.size;
   const late = rows.filter(function(r) { return r["Days late"] > 0; });
+  var lateIds = new Set(); late.forEach(function(r) { lateIds.add(r["Order ID"]); });
+  var lateUniqueCount = lateIds.size;
   const avgLate = late.length ? (late.reduce(function(s,r) { return s + r["Days late"]; }, 0) / late.length).toFixed(1) : 0;
 
   document.getElementById("cth-kpi-total").textContent = t;
   document.getElementById("cth-kpi-ofd").textContent = ofd;
   document.getElementById("cth-kpi-ofd-pct").textContent = pct(ofd, t) + " of total";
-  document.getElementById("cth-kpi-exc").textContent = exc;
-  document.getElementById("cth-kpi-exc-pct").textContent = pct(exc, t) + " of total";
+  document.getElementById("cth-kpi-exc").textContent = excUniqueCount;
+  document.getElementById("cth-kpi-exc-pct").textContent = pct(excUniqueCount, t) + " of total";
   document.getElementById("cth-kpi-shipped").textContent = shipped;
   document.getElementById("cth-kpi-shipped-pct").textContent = pct(shipped, t) + " of total";
-  document.getElementById("cth-late-count").textContent = late.length;
-  document.getElementById("cth-late-pct").textContent = t ? Math.round(late.length/t*100)+"%" : "0%";
+  document.getElementById("cth-late-count").textContent = lateUniqueCount;
+  document.getElementById("cth-late-pct").textContent = t ? Math.round(lateUniqueCount/t*100)+"%" : "0%";
   document.getElementById("cth-late-avg").textContent = avgLate;
 
   renderDonut("cth-donut", "cth-donut-legend", sc, t);
@@ -605,10 +609,13 @@ function renderUA() {
   const orgs = new Set(rows.map(function(r) { return r["Organization name"]; }));
   const countries = new Set(rows.map(function(r) { return r["Country code"]; }).filter(Boolean));
 
+  var orderedIds = new Set(); rows.filter(function(r) { return r["Item Status"] === "Ordered"; }).forEach(function(r) { orderedIds.add(r["Order ID"]); });
+  var orderedUniqueCount = orderedIds.size;
+
   document.getElementById("ua-kpi-total").textContent = t;
   document.getElementById("ua-kpi-orgs").textContent = orgs.size;
-  document.getElementById("ua-kpi-ordered").textContent = sc["Ordered"]||0;
-  document.getElementById("ua-kpi-ordered-pct").textContent = pct(sc["Ordered"]||0, t) + " of total";
+  document.getElementById("ua-kpi-ordered").textContent = orderedUniqueCount;
+  document.getElementById("ua-kpi-ordered-pct").textContent = pct(orderedUniqueCount, t) + " of total";
   document.getElementById("ua-kpi-countries").textContent = countries.size;
 
   renderBars("ua-org-bars", countBy(rows, "Organization name"), 10);
@@ -667,13 +674,15 @@ function renderDS() {
   const sc = countBy(rows, "Status");
   const ordered = sc["Ordered"]||0;
   const late = rows.filter(function(r) { return r["Days late"] > 0; });
+  var lateIds = new Set(); late.forEach(function(r) { lateIds.add(r["Order ID"]); });
+  var lateUniqueCount = lateIds.size;
   const avgDays = t ? (rows.reduce(function(s,r) { return s + (r["Business days since creation"]||0); }, 0) / t).toFixed(1) : 0;
 
   document.getElementById("ds-kpi-total").textContent = t;
   document.getElementById("ds-kpi-ordered").textContent = ordered;
   document.getElementById("ds-kpi-ordered-pct").textContent = pct(ordered, t) + " of total";
-  document.getElementById("ds-kpi-late").textContent = late.length;
-  document.getElementById("ds-kpi-late-sub").textContent = late.length ? pct(late.length,t) + " of total" : "0%";
+  document.getElementById("ds-kpi-late").textContent = lateUniqueCount;
+  document.getElementById("ds-kpi-late-sub").textContent = lateUniqueCount ? pct(lateUniqueCount,t) + " of total" : "0%";
   document.getElementById("ds-kpi-avgdays").textContent = avgDays;
 
   renderBars("ds-org-bars", countBy(rows, "Organization name"), 10);
