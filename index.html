@@ -11,6 +11,18 @@
   --text: #e8eaf0; --muted: #6b7080; --accent: #5b8df8; --accent2: #f8a25b;
   --danger: #f85b7a; --success: #5bf8a2; --warn: #f8e05b;
 }
+[data-theme="light"] {
+  --bg: #f0f2f5; --surface: #ffffff; --surface2: #f5f6f8; --border: #dfe1e6;
+  --text: #1a1d26; --muted: #6b7080; --accent: #3b6fdf; --accent2: #d68530;
+  --danger: #d94460; --success: #1e9e5e; --warn: #c4a816;
+}
+/* THEME TOGGLE */
+.theme-toggle { display: flex; align-items: center; gap: 7px; }
+.theme-toggle-label { font-size: 0.58rem; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
+.toggle-track { position: relative; width: 36px; height: 20px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; transition: background 0.2s; }
+.toggle-track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; background: var(--muted); border-radius: 50%; transition: transform 0.2s, background 0.2s; }
+[data-theme="light"] .toggle-track { background: var(--accent); border-color: var(--accent); }
+[data-theme="light"] .toggle-track::after { transform: translateX(16px); background: #fff; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: "DM Mono", monospace; background: var(--bg); color: var(--text); min-height: 100vh; padding: 24px; }
 
@@ -132,7 +144,14 @@ header { display: flex; align-items: flex-end; justify-content: space-between; m
     <h1>Open Orders Dashboard</h1>
     <p>All open order items &mdash; Jan 2024 &mdash; Apr 2026</p>
   </div>
-  <div class="header-right">Last export<br>April 3, 2026</div>
+  <div style="display:flex;align-items:center;gap:20px;">
+    <div class="theme-toggle">
+      <span class="theme-toggle-label">Dark</span>
+      <div class="toggle-track" id="theme-toggle" onclick="toggleTheme()"></div>
+      <span class="theme-toggle-label">Light</span>
+    </div>
+    <div class="header-right">Last export<br>April 3, 2026</div>
+  </div>
 </header>
 
 <div class="upload-bar">
@@ -254,8 +273,14 @@ let DATA2 = {"shipDateNotIncluded": [{"Open Order Item": "Open", "Inventory orde
 
 let OSM_MAP = {"Amy Smith": ["3Cloud Solutions", "8th Light", "Akasa", "Apollo Graph", "Beamery", "Benifex", "Cambridge Mobile Telematics", "Cloudflare", "Corelight, Inc", "Cover Genius", "Docebo", "Dutchie", "Fortis Games", "HackerOne", "Houzz", "Lattice", "Mercari", "Mews", "Motion", "Movable Ink", "Mysten Labs", "Neo4j", "New Relic", "Outrider", "Pantheon Systems", "Pax8", "Paxos", "Prometheus", "Replicant", "SeatGeek", "SentinelOne", "Shopmonkey", "Sidecar Health", "Sovos", "Stack Overflow", "Strava", "Sysdig", "The Energy Foundation", "UiPath", "Veramed", "Verint Systems Inc", "Yankee Leisure Group", "YouGov", "evermore"], "Katie Prentice": ["Anyscale", "Archer Faris", "Ashby", "Assent", "Astronomer", "BDS Connected Solutions", "BGB Group", "Binti", "Braze", "Carta", "Coastal Community Bank", "Coinbase", "Cresta", "Crisis24", "Crosby Legal", "Discord", "ECI Software Solutions", "FluidStack", "HackerRank", "Harmonic Security", "Horizon3.ai", "Kraken Robotics", "LogicMonitor", "MaryRuth's", "Mercury", "Momentus", "MoonPay", "OpenSesame", "Pacvue", "Papa", "Permutive", "Phaidra", "Ping Identity", "Postman", "Prenuvo", "QbDVision", "Ramp", "Rithum", "SOCi", "Sift", "SpotOn", "StackAdapt", "Staffbase", "Synthesia", "Tailscale", "True Anomaly", "Velocity Global/Pebl", "Verve", "Wisp", "Wrapbook", "Yext", "York Solutions LLC", "a16z"], "Drea Bosque": ["Abnormal.AI", "Anaplan", "AppDirect", "Atrium", "BallotReady", "Branching Minds", "Brightwheel", "ConcertAI", "Cority", "Corporate Finance Institute", "Digital.ai", "Dotdigital", "Earnest Analytics", "Finfare", "Firstbase", "GAN Integrity", "JumpCloud", "Kinsta", "LastPass", "Life360", "Macabacus", "MedTrainer", "Mindoula", "Nylas", "OnePay", "OneTrust", "Qualtrics", "Refugee Rights", "SandboxAQ", "Sophos", "Spotify", "Sprout Social", "Sterling (FirstAdvantage)", "Sui Foundation", "Tanium", "Teylor", "TheMathCompany", "Typeform", "Varo Bank", "Wise", "Wiz", "ZenBusiness"]};
 
-const COLORS = ["#5b8df8","#f8a25b","#5bf8a2","#f85b7a","#f8e05b","#a25bf8","#5bf8e0","#f85bb8","#8df85b","#5bc0f8"];
-const STATUS_COLORS = {"Shipped":"#5bf8a2","Processing":"#6b7080","Ordered":"#5b8df8","Approved":"#f8a25b","Out For Delivery":"#f8a25b","Delivery Exception":"#f85b7a"};
+const COLORS_DARK = ["#5b8df8","#f8a25b","#5bf8a2","#f85b7a","#f8e05b","#a25bf8","#5bf8e0","#f85bb8","#8df85b","#5bc0f8"];
+const COLORS_LIGHT = ["#3b6fdf","#d68530","#1e9e5e","#d94460","#b89a10","#7a3dd6","#1eab9e","#d63a8c","#5aad2e","#2e96d6"];
+const STATUS_COLORS_DARK = {"Shipped":"#5bf8a2","Processing":"#6b7080","Ordered":"#5b8df8","Approved":"#f8a25b","Out For Delivery":"#f8a25b","Delivery Exception":"#f85b7a"};
+const STATUS_COLORS_LIGHT = {"Shipped":"#1e9e5e","Processing":"#6b7080","Ordered":"#3b6fdf","Approved":"#d68530","Out For Delivery":"#d68530","Delivery Exception":"#d94460"};
+function isLightTheme() { return document.documentElement.getAttribute("data-theme") === "light"; }
+var COLORS = COLORS_DARK;
+var STATUS_COLORS = STATUS_COLORS_DARK;
+function updateThemeColors() { COLORS = isLightTheme() ? COLORS_LIGHT : COLORS_DARK; STATUS_COLORS = isLightTheme() ? STATUS_COLORS_LIGHT : STATUS_COLORS_DARK; }
 
 // ===== UTILITIES =====
 function countBy(arr, key) {
@@ -522,13 +547,15 @@ function renderCTS() {
   const sc = countBy(rows, "Status");
   const proc = sc["Processing"]||0, ordered = sc["Ordered"]||0;
   const late = rows.filter(function(r) { return r["Days late"] > 0; });
+  var lateIds = new Set(); late.forEach(function(r) { lateIds.add(r["Order ID"]); });
+  var lateUniqueCount = lateIds.size;
   const avgLate = late.length ? (late.reduce(function(s,r) { return s + r["Days late"]; }, 0) / late.length).toFixed(1) : 0;
 
   document.getElementById("cts-kpi-total").textContent = t;
   document.getElementById("cts-kpi-processing").textContent = proc;
   document.getElementById("cts-kpi-processing-pct").textContent = pct(proc, t) + " of total";
-  document.getElementById("cts-kpi-late").textContent = late.length;
-  document.getElementById("cts-kpi-late-sub").textContent = pct(late.length,t) + " · avg " + avgLate + "d late";
+  document.getElementById("cts-kpi-late").textContent = lateUniqueCount;
+  document.getElementById("cts-kpi-late-sub").textContent = pct(lateUniqueCount,t) + " · avg " + avgLate + "d late";
   document.getElementById("cts-kpi-ordered").textContent = ordered;
   document.getElementById("cts-kpi-ordered-pct").textContent = pct(ordered, t) + " of total";
 
@@ -875,6 +902,18 @@ function handleTabUpload(tab, file) {
   reader.readAsText(file);
   document.getElementById("upload-" + tab).value = "";
 }
+// ===== THEME TOGGLE =====
+function toggleTheme() {
+  var html = document.documentElement;
+  if (html.getAttribute("data-theme") === "light") {
+    html.removeAttribute("data-theme");
+  } else {
+    html.setAttribute("data-theme", "light");
+  }
+  updateThemeColors();
+  renderAll();
+}
+
 populateGlobalFilters();
 renderAll();
 </script>
