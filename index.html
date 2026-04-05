@@ -311,16 +311,16 @@ function populateGlobalFilters() {
   // Org — union of all org names, filtered by OSM
   const osmOrgs = getGlobalOsmOrgs();
   const allOrgs = new Set();
-  [DATA.clickToShip, DATA.clickToHome, DATA.unassigned, DATA.inventory, DATA2.shipDateNotIncluded, DATA2.dropship].forEach(ds => {
-    ds.forEach(r => {
-      const org = r["Organization name"] || "";
-      if (org) {
-        if (!osmOrgs || osmOrgs.some(m => org.toLowerCase().includes(m.toLowerCase()) || m.toLowerCase().includes(org.toLowerCase()))) {
-          allOrgs.add(org);
-        }
-      }
+  if (osmOrgs) {
+    osmOrgs.forEach(function(o) { allOrgs.add(o); });
+  } else {
+    [DATA.clickToShip, DATA.clickToHome, DATA.unassigned, DATA.inventory, DATA2.shipDateNotIncluded, DATA2.dropship].forEach(ds => {
+      ds.forEach(r => {
+        const org = r["Organization name"] || "";
+        if (org) allOrgs.add(org);
+      });
     });
-  });
+  }
   const orgSel = document.getElementById("g-org");
   const curOrg = orgSel.value;
   while (orgSel.options.length > 1) orgSel.remove(1);
