@@ -848,6 +848,46 @@ function setTabData(tab, rows) {
   else if (tab === "inventory") DATA.inventory = rows;
   else if (tab === "sdni") DATA2.shipDateNotIncluded = rows;
   else if (tab === "dropship") DATA2.dropship = rows;
+  saveDataToStorage();
+}
+
+// ===== LOCAL STORAGE PERSISTENCE =====
+var STORAGE_KEY = "openOrdersDashboardData";
+
+function saveDataToStorage() {
+  try {
+    var payload = {
+      clickToShip: DATA.clickToShip,
+      clickToHome: DATA.clickToHome,
+      unassigned: DATA.unassigned,
+      inventory: DATA.inventory,
+      shipDateNotIncluded: DATA2.shipDateNotIncluded,
+      dropship: DATA2.dropship,
+      savedAt: new Date().toISOString()
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  } catch (e) {
+    console.warn("Could not save to localStorage:", e);
+  }
+}
+
+function loadDataFromStorage() {
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    var payload = JSON.parse(raw);
+    if (payload.clickToShip && payload.clickToShip.length) DATA.clickToShip = payload.clickToShip;
+    if (payload.clickToHome && payload.clickToHome.length) DATA.clickToHome = payload.clickToHome;
+    if (payload.unassigned && payload.unassigned.length) DATA.unassigned = payload.unassigned;
+    if (payload.inventory && payload.inventory.length) DATA.inventory = payload.inventory;
+    if (payload.shipDateNotIncluded && payload.shipDateNotIncluded.length) DATA2.shipDateNotIncluded = payload.shipDateNotIncluded;
+    if (payload.dropship && payload.dropship.length) DATA2.dropship = payload.dropship;
+    console.log("Restored dashboard data from localStorage (saved " + payload.savedAt + ")");
+    return true;
+  } catch (e) {
+    console.warn("Could not load from localStorage:", e);
+    return false;
+  }
 }
 
 function showUploadStatus(elId, msg, isError) {
@@ -923,6 +963,7 @@ function toggleTheme() {
   renderAll();
 }
 
+loadDataFromStorage();
 populateGlobalFilters();
 renderAll();
 </script>
