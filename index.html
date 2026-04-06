@@ -252,7 +252,7 @@ header { display: flex; align-items: flex-end; justify-content: space-between; m
   <div class="kpi-row">
     <div class="kpi blue"><div class="kpi-label">Total Orders</div><div class="kpi-value" id="inv-kpi-total">0</div><div class="kpi-sub">all processing</div></div>
     <div class="kpi orange"><div class="kpi-label">Total Quantity</div><div class="kpi-value" id="inv-kpi-qty">0</div><div class="kpi-sub">items to ship</div></div>
-    <div class="kpi red"><div class="kpi-label">Avg Days Until Ship</div><div class="kpi-value" id="inv-kpi-avgdays">0</div><div class="kpi-sub">business days</div></div>
+    <div class="kpi red kpi-clickable" onclick="showInvOrders()"><div class="kpi-label">Orders Missing Ship Date</div><div class="kpi-value" id="inv-kpi-avgdays">0</div><div class="kpi-sub">orders</div><div class="kpi-click-hint">click to view order IDs</div></div>
     <div class="kpi green"><div class="kpi-label">New Condition</div><div class="kpi-value" id="inv-kpi-new">0</div><div class="kpi-sub" id="inv-kpi-new-pct"></div></div>
   </div>
   <div class="grid-2">
@@ -435,12 +435,12 @@ const pageState = { cts: 0, cth: 0, unassigned: 0, inventory: 0, sdni: 0, dropsh
 const filteredCache = { cts: [], cth: [], unassigned: [], inventory: [], sdni: [], dropship: [] };
 
 const TABLE_COLS = {
-  cts: ["Organization name","Status","Category","Assigned to","Country","Region code","Days late","SLO","CTS Business Days"],
-  cth: ["Organization name","Status","Category","Assigned to","Country","Warehouse name","Days late","CTH Business Days"],
-  unassigned: ["Organization name","Item Status","Country code","Product title","Recipient","Created At","Office name"],
-  inventory: ["Organization name","Category","Country","Warehouse name","Region code","Quantity","Business Days Until Ship","Condition"],
-  sdni: ["Organization name","Category","Country","Warehouse name","Region code","Quantity","Business Days Since Created","Condition"],
-  dropship: ["Organization name","Status","Category","Country","Assigned to","Days late","Days since creation","Product title"]
+  cts: ["Order ID","Organization name","Status","Category","Assigned to","Country","Region code","Days late","SLO","CTS Business Days"],
+  cth: ["Order ID","Organization name","Status","Category","Assigned to","Country","Warehouse name","Days late","CTH Business Days"],
+  unassigned: ["Order ID","Organization name","Item Status","Country code","Product title","Recipient","Created At","Office name"],
+  inventory: ["Inventory order ID","Organization name","Category","Country","Warehouse name","Region code","Quantity","Business Days Until Ship","Condition"],
+  sdni: ["Inventory order ID","Organization name","Category","Country","Warehouse name","Region code","Quantity","Business Days Since Created","Condition"],
+  dropship: ["Order ID","Organization name","Status","Category","Country","Assigned to","Days late","Days since creation","Product title"]
 };
 
 function statusBadge(s) {
@@ -461,6 +461,7 @@ function renderTable(tab) {
     html += "<tr>" + cols.map(function(c) {
       const v = r[c] != null ? r[c] : "";
       if (c === "Status" || c === "Item Status") return "<td>"+statusBadge(v)+"</td>";
+      if (c === "Order ID" || c === "Inventory order ID") return '<td style="white-space:nowrap"><span title="'+v+'" style="margin-right:4px">'+v.slice(0,8)+'…</span><button class="copy-btn" data-oid="'+v+'">Copy</button></td>';
       return '<td title="'+v+'">'+v+'</td>';
     }).join("") + "</tr>";
   });
@@ -629,12 +630,11 @@ function renderINV() {
   filteredCache.inventory = rows;
   const t = rows.length;
   const totalQty = rows.reduce(function(s,r) { return s + (r["Quantity"]||0); }, 0);
-  const avgDays = t ? (rows.reduce(function(s,r) { return s + (r["Business Days Until Ship"]||0); }, 0) / t).toFixed(1) : 0;
   const newCount = rows.filter(function(r) { return r["Condition"] === "NEW"; }).length;
 
   document.getElementById("inv-kpi-total").textContent = t;
   document.getElementById("inv-kpi-qty").textContent = totalQty;
-  document.getElementById("inv-kpi-avgdays").textContent = avgDays;
+  document.getElementById("inv-kpi-avgdays").textContent = t;
   document.getElementById("inv-kpi-new").textContent = newCount;
   document.getElementById("inv-kpi-new-pct").textContent = pct(newCount, t) + " new condition";
 
@@ -651,12 +651,11 @@ function renderSDNI() {
   filteredCache.sdni = rows;
   const t = rows.length;
   const totalQty = rows.reduce(function(s,r) { return s + (r["Quantity"]||0); }, 0);
-  const avgDays = t ? (rows.reduce(function(s,r) { return s + (r["Days Since Created"]||0); }, 0) / t).toFixed(1) : 0;
   const newCount = rows.filter(function(r) { return r["Condition"] === "NEW"; }).length;
 
   document.getElementById("sdni-kpi-total").textContent = t;
   document.getElementById("sdni-kpi-qty").textContent = totalQty;
-  document.getElementById("sdni-kpi-avgdays").textContent = avgDays;
+  document.getElementById("sdni-kpi-avgdays").textContent = t;
   document.getElementById("sdni-kpi-new").textContent = newCount;
   document.getElementById("sdni-kpi-new-pct").textContent = pct(newCount, t) + " new condition";
 
@@ -703,6 +702,28 @@ function showDropshipOrdered() {
   openModal("Late Dropship Order IDs", deduped.length + " orders with Days Late > 0", items);
 }
 
+function showInvOrders() {
+  var rows = filteredCache.inventory;
+  var seen = new Set(); var deduped = [];
+  rows.forEach(function(r) { var oid = r["Inventory order ID"]; if (oid && !seen.has(oid)) { seen.add(oid); deduped.push(r); } });
+  var items = deduped.map(function(r) {
+    var days = r["Business Days Until Ship"] != null ? Math.round(r["Business Days Until Ship"]) + " business days until ship" : "";
+    return { id: r["Inventory order ID"], org: r["Organization name"], detail: days };
+  });
+  openModal("Orders Missing Ship Date", deduped.length + " orders missing expected ship date", items);
+}
+
+function showSdniOrders() {
+  var rows = filteredCache.sdni;
+  var seen = new Set(); var deduped = [];
+  rows.forEach(function(r) { var oid = r["Inventory order ID"]; if (oid && !seen.has(oid)) { seen.add(oid); deduped.push(r); } });
+  var items = deduped.map(function(r) {
+    var days = r["Business Days Since Created"] != null ? Math.round(r["Business Days Since Created"]) + " business days since created" : "";
+    return { id: r["Inventory order ID"], org: r["Organization name"], detail: days };
+  });
+  openModal("Orders Without Ship Date", deduped.length + " orders without a ship date", items);
+}
+
 function renderAll() {
   renderCTS(); renderCTH(); renderUA(); renderINV(); renderSDNI(); renderDS();
   updateGlobalCount();
@@ -734,7 +755,7 @@ function switchTab(tab) {
   <div class="kpi-row">
     <div class="kpi blue"><div class="kpi-label">Total Orders</div><div class="kpi-value" id="sdni-kpi-total">0</div><div class="kpi-sub">all processing</div></div>
     <div class="kpi orange"><div class="kpi-label">Total Quantity</div><div class="kpi-value" id="sdni-kpi-qty">0</div><div class="kpi-sub">items pending</div></div>
-    <div class="kpi red"><div class="kpi-label">Avg Days Since Created</div><div class="kpi-value" id="sdni-kpi-avgdays">0</div><div class="kpi-sub">calendar days</div></div>
+    <div class="kpi red kpi-clickable" onclick="showSdniOrders()"><div class="kpi-label">Orders Without Ship Date</div><div class="kpi-value" id="sdni-kpi-avgdays">0</div><div class="kpi-sub">orders</div><div class="kpi-click-hint">click to view order IDs</div></div>
     <div class="kpi green"><div class="kpi-label">New Condition</div><div class="kpi-value" id="sdni-kpi-new">0</div><div class="kpi-sub" id="sdni-kpi-new-pct"></div></div>
   </div>
   <div class="grid-2">
