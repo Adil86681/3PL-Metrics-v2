@@ -7,20 +7,20 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #0e0f13; --surface: #16181f; --surface2: #1e2028; --border: #2a2d38;
-  --text: #e8eaf0; --muted: #6b7080; --accent: #5b8df8; --accent2: #f8a25b;
-  --danger: #f85b7a; --success: #5bf8a2; --warn: #f8e05b;
+  --bg: #eaf0f6; --surface: #ffffff; --surface2: #f3f6fa; --border: #d4dbe5;
+  --text: #1a1d2b; --muted: #6b7484; --accent: #e8546b; --accent2: #1a1d2b;
+  --danger: #d94460; --success: #1e9e5e; --warn: #c4a816;
 }
 [data-theme="light"] {
-  --bg: #f0f2f5; --surface: #ffffff; --surface2: #f5f6f8; --border: #dfe1e6;
-  --text: #1a1d26; --muted: #6b7080; --accent: #3b6fdf; --accent2: #d68530;
-  --danger: #d94460; --success: #1e9e5e; --warn: #c4a816;
+  --bg: #2c2f36; --surface: #363940; --surface2: #3e424b; --border: #4e525d;
+  --text: #e2e4e9; --muted: #8e929c; --accent: #e8546b; --accent2: #f0a050;
+  --danger: #f06070; --success: #50d890; --warn: #e8c840;
 }
 /* THEME TOGGLE */
 .theme-toggle { display: flex; align-items: center; gap: 7px; }
 .theme-toggle-label { font-size: 0.58rem; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
-.toggle-track { position: relative; width: 36px; height: 20px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; transition: background 0.2s; }
-.toggle-track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; background: var(--muted); border-radius: 50%; transition: transform 0.2s, background 0.2s; }
+.toggle-track { position: relative; width: 36px; height: 20px; background: var(--accent); border: 1px solid var(--accent); border-radius: 10px; cursor: pointer; transition: background 0.2s; }
+.toggle-track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; background: #fff; border-radius: 50%; transition: transform 0.2s, background 0.2s; }
 [data-theme="light"] .toggle-track { background: var(--accent); border-color: var(--accent); }
 [data-theme="light"] .toggle-track::after { transform: translateX(16px); background: #fff; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -146,9 +146,9 @@ header { display: flex; align-items: flex-end; justify-content: space-between; m
   </div>
   <div style="display:flex;align-items:center;gap:20px;">
     <div class="theme-toggle">
-      <span class="theme-toggle-label">Dark</span>
+      <span class="theme-toggle-label">Firstbase</span>
       <div class="toggle-track" id="theme-toggle" onclick="toggleTheme()"></div>
-      <span class="theme-toggle-label">Light</span>
+      <span class="theme-toggle-label">Gray</span>
     </div>
     <div class="header-right">Last export<br>April 3, 2026</div>
   </div>
@@ -186,7 +186,7 @@ header { display: flex; align-items: flex-end; justify-content: space-between; m
   <div class="kpi-row">
     <div class="kpi blue"><div class="kpi-label">Total Orders</div><div class="kpi-value" id="cts-kpi-total">0</div><div class="kpi-sub">across all assignees</div></div>
     <div class="kpi orange"><div class="kpi-label">Processing</div><div class="kpi-value" id="cts-kpi-processing">0</div><div class="kpi-sub" id="cts-kpi-processing-pct"></div></div>
-    <div class="kpi red kpi-clickable" onclick="showLateOrders()"><div class="kpi-label">Late Orders</div><div class="kpi-value" id="cts-kpi-late">0</div><div class="kpi-sub" id="cts-kpi-late-sub"></div><div class="kpi-click-hint">click to view order IDs</div></div>
+    <div class="kpi red kpi-clickable" onclick="showLateOrders()"><div class="kpi-label">Late Orders</div><div class="kpi-value" id="cts-kpi-late">0</div><div class="kpi-sub" id="cts-kpi-late-sub"></div><div class="kpi-click-hint">click to view order item IDs</div></div>
     <div class="kpi green"><div class="kpi-label">Ordered</div><div class="kpi-value" id="cts-kpi-ordered">0</div><div class="kpi-sub" id="cts-kpi-ordered-pct"></div></div>
   </div>
   <div class="grid-2">
@@ -207,7 +207,7 @@ header { display: flex; align-items: flex-end; justify-content: space-between; m
   <div class="kpi-row">
     <div class="kpi blue"><div class="kpi-label">Total Orders</div><div class="kpi-value" id="cth-kpi-total">0</div><div class="kpi-sub">across all assignees</div></div>
     <div class="kpi orange"><div class="kpi-label">Out for Delivery</div><div class="kpi-value" id="cth-kpi-ofd">0</div><div class="kpi-sub" id="cth-kpi-ofd-pct"></div></div>
-    <div class="kpi red kpi-clickable" onclick="showExceptions()"><div class="kpi-label">Delivery Exceptions</div><div class="kpi-value" id="cth-kpi-exc">0</div><div class="kpi-sub" id="cth-kpi-exc-pct"></div><div class="kpi-click-hint">click to view order IDs</div></div>
+    <div class="kpi red kpi-clickable" onclick="showExceptions()"><div class="kpi-label">Delivery Exceptions</div><div class="kpi-value" id="cth-kpi-exc">0</div><div class="kpi-sub" id="cth-kpi-exc-pct"></div><div class="kpi-click-hint">click to view order item IDs</div></div>
     <div class="kpi green"><div class="kpi-label">Shipped</div><div class="kpi-value" id="cth-kpi-shipped">0</div><div class="kpi-sub" id="cth-kpi-shipped-pct"></div></div>
   </div>
   <div class="grid-2">
@@ -235,7 +235,7 @@ header { display: flex; align-items: flex-end; justify-content: space-between; m
   <div class="kpi-row">
     <div class="kpi blue"><div class="kpi-label">Total Unassigned</div><div class="kpi-value" id="ua-kpi-total">0</div><div class="kpi-sub">orders without assignee</div></div>
     <div class="kpi orange"><div class="kpi-label">Organizations</div><div class="kpi-value" id="ua-kpi-orgs">0</div><div class="kpi-sub">with unassigned orders</div></div>
-    <div class="kpi red kpi-clickable" onclick="showUnassignedOrdered()"><div class="kpi-label">Ordered</div><div class="kpi-value" id="ua-kpi-ordered">0</div><div class="kpi-sub" id="ua-kpi-ordered-pct"></div><div class="kpi-click-hint">click to view order IDs</div></div>
+    <div class="kpi red kpi-clickable" onclick="showUnassignedOrdered()"><div class="kpi-label">Ordered</div><div class="kpi-value" id="ua-kpi-ordered">0</div><div class="kpi-sub" id="ua-kpi-ordered-pct"></div><div class="kpi-click-hint">click to view order item IDs</div></div>
     <div class="kpi green"><div class="kpi-label">Countries</div><div class="kpi-value" id="ua-kpi-countries">0</div><div class="kpi-sub">unique countries</div></div>
   </div>
   <div class="grid-3">
@@ -253,7 +253,7 @@ header { display: flex; align-items: flex-end; justify-content: space-between; m
   <div class="kpi-row">
     <div class="kpi blue"><div class="kpi-label">Total Orders</div><div class="kpi-value" id="inv-kpi-total">0</div><div class="kpi-sub">all processing</div></div>
     <div class="kpi orange"><div class="kpi-label">Total Quantity</div><div class="kpi-value" id="inv-kpi-qty">0</div><div class="kpi-sub">items to ship</div></div>
-    <div class="kpi red kpi-clickable" onclick="showInvOrders()"><div class="kpi-label">Orders Missing Ship Date</div><div class="kpi-value" id="inv-kpi-avgdays">0</div><div class="kpi-sub">orders</div><div class="kpi-click-hint">click to view order IDs</div></div>
+    <div class="kpi red kpi-clickable" onclick="showInvOrders()"><div class="kpi-label">Orders Missing Ship Date</div><div class="kpi-value" id="inv-kpi-avgdays">0</div><div class="kpi-sub">orders</div><div class="kpi-click-hint">click to view order item IDs</div></div>
     <div class="kpi green"><div class="kpi-label">New Condition</div><div class="kpi-value" id="inv-kpi-new">0</div><div class="kpi-sub" id="inv-kpi-new-pct"></div></div>
   </div>
   <div class="grid-2">
@@ -274,10 +274,10 @@ let DATA2 = {"shipDateNotIncluded": [{"Open Order Item": "Open", "Inventory orde
 
 let OSM_MAP = {"Amy Smith": ["3Cloud Solutions", "8th Light", "Akasa", "Apollo Graph", "Beamery", "Benifex", "Cambridge Mobile Telematics", "Cloudflare", "Corelight, Inc", "Cover Genius", "Docebo", "Dutchie", "Fortis Games", "HackerOne", "Houzz", "Lattice", "Mercari", "Mews", "Motion", "Movable Ink", "Mysten Labs", "Neo4j", "New Relic", "Outrider", "Pantheon Systems", "Pax8", "Paxos", "Prometheus", "Replicant", "SeatGeek", "SentinelOne", "Shopmonkey", "Sidecar Health", "Sovos", "Stack Overflow", "Strava", "Sysdig", "The Energy Foundation", "UiPath", "Veramed", "Verint Systems Inc", "Yankee Leisure Group", "YouGov", "evermore"], "Katie Prentice": ["Anyscale", "Archer Faris", "Ashby", "Assent", "Astronomer", "BDS Connected Solutions", "BGB Group", "Binti", "Braze", "Carta", "Coastal Community Bank", "Coinbase", "Cresta", "Crisis24", "Crosby Legal", "Discord", "ECI Software Solutions", "FluidStack", "HackerRank", "Harmonic Security", "Horizon3.ai", "Kraken Robotics", "LogicMonitor", "MaryRuth's", "Mercury", "Momentus", "MoonPay", "OpenSesame", "Pacvue", "Papa", "Permutive", "Phaidra", "Ping Identity", "Postman", "Prenuvo", "QbDVision", "Ramp", "Rithum", "SOCi", "Sift", "SpotOn", "StackAdapt", "Staffbase", "Synthesia", "Tailscale", "True Anomaly", "Velocity Global/Pebl", "Verve", "Wisp", "Wrapbook", "Yext", "York Solutions LLC", "a16z"], "Drea Bosque": ["Abnormal.AI", "Anaplan", "AppDirect", "Atrium", "BallotReady", "Branching Minds", "Brightwheel", "ConcertAI", "Cority", "Corporate Finance Institute", "Digital.ai", "Dotdigital", "Earnest Analytics", "Finfare", "Firstbase", "GAN Integrity", "JumpCloud", "Kinsta", "LastPass", "Life360", "Macabacus", "MedTrainer", "Mindoula", "Nylas", "OnePay", "OneTrust", "Qualtrics", "Refugee Rights", "SandboxAQ", "Sophos", "Spotify", "Sprout Social", "Sterling (FirstAdvantage)", "Sui Foundation", "Tanium", "Teylor", "TheMathCompany", "Typeform", "Varo Bank", "Wise", "Wiz", "ZenBusiness"]};
 
-const COLORS_DARK = ["#5b8df8","#f8a25b","#5bf8a2","#f85b7a","#f8e05b","#a25bf8","#5bf8e0","#f85bb8","#8df85b","#5bc0f8"];
-const COLORS_LIGHT = ["#3b6fdf","#d68530","#1e9e5e","#d94460","#b89a10","#7a3dd6","#1eab9e","#d63a8c","#5aad2e","#2e96d6"];
-const STATUS_COLORS_DARK = {"Shipped":"#5bf8a2","Processing":"#6b7080","Ordered":"#5b8df8","Approved":"#f8a25b","Out For Delivery":"#f8a25b","Delivery Exception":"#f85b7a"};
-const STATUS_COLORS_LIGHT = {"Shipped":"#1e9e5e","Processing":"#6b7080","Ordered":"#3b6fdf","Approved":"#d68530","Out For Delivery":"#d68530","Delivery Exception":"#d94460"};
+const COLORS_DARK = ["#e8546b","#1a1d2b","#1e9e5e","#d94460","#c4a816","#7a5195","#4ea8b0","#d63a8c","#5aad2e","#3a7fd5"];
+const COLORS_LIGHT = ["#e8546b","#f0a050","#50d890","#f06070","#e8c840","#a070e0","#50c8d0","#e060a0","#80d050","#50a0e0"];
+const STATUS_COLORS_DARK = {"Shipped":"#1e9e5e","Processing":"#6b7484","Ordered":"#e8546b","Approved":"#1a1d2b","Out For Delivery":"#4ea8b0","Delivery Exception":"#d94460"};
+const STATUS_COLORS_LIGHT = {"Shipped":"#50d890","Processing":"#8e929c","Ordered":"#e8546b","Approved":"#f0a050","Out For Delivery":"#f0a050","Delivery Exception":"#f06070"};
 function isLightTheme() { return document.documentElement.getAttribute("data-theme") === "light"; }
 var COLORS = COLORS_DARK;
 var STATUS_COLORS = STATUS_COLORS_DARK;
@@ -438,12 +438,12 @@ const pageState = { cts: 0, cth: 0, unassigned: 0, inventory: 0, sdni: 0, dropsh
 const filteredCache = { cts: [], cth: [], unassigned: [], inventory: [], sdni: [], dropship: [] };
 
 const TABLE_COLS = {
-  cts: ["Order ID","Organization name","Status","Category","Assigned to","Country","Region code","Days late","SLO","CTS Business Days"],
-  cth: ["Order ID","Organization name","Status","Category","Assigned to","Country","Warehouse name","Days late","CTH Business Days"],
-  unassigned: ["Order ID","Organization name","Item Status","Country code","Product title","Recipient","Created At","Office name"],
+  cts: ["Order item ID","Order ID","Organization name","Status","Category","Assigned to","Country","Region code","Days late","SLO","CTS Business Days"],
+  cth: ["Order item ID","Order ID","Organization name","Status","Category","Assigned to","Country","Warehouse name","Days late","CTH Business Days"],
+  unassigned: ["Order item ID","Order ID","Organization name","Item Status","Country code","Product title","Recipient","Created At","Office name"],
   inventory: ["Inventory order ID","Organization name","Category","Country","Warehouse name","Region code","Quantity","Business Days Until Ship","Condition"],
   sdni: ["Inventory order ID","Organization name","Category","Country","Warehouse name","Region code","Quantity","Business Days Since Created","Condition"],
-  dropship: ["Order ID","Organization name","Status","Category","Country","Assigned to","Days late","Days since creation","Product title"]
+  dropship: ["Order item ID","Order ID","Organization name","Status","Category","Country","Assigned to","Days late","Days since creation","Product title"]
 };
 
 function statusBadge(s) {
@@ -464,7 +464,7 @@ function renderTable(tab) {
     html += "<tr>" + cols.map(function(c) {
       const v = r[c] != null ? r[c] : "";
       if (c === "Status" || c === "Item Status") return "<td>"+statusBadge(v)+"</td>";
-      if (c === "Order ID" || c === "Inventory order ID") return '<td style="white-space:nowrap"><span title="'+v+'" style="margin-right:4px">'+v.slice(0,8)+'…</span><button class="copy-btn" data-oid="'+v+'">Copy</button></td>';
+      if (c === "Order item ID" || c === "Order ID" || c === "Inventory order ID") return '<td style="white-space:nowrap"><span title="'+v+'" style="margin-right:4px">'+(v.length>8?v.slice(0,8)+'…':v)+'</span><button class="copy-btn" data-oid="'+v+'">Copy</button></td>';
       return '<td title="'+v+'">'+v+'</td>';
     }).join("") + "</tr>";
   });
@@ -488,7 +488,12 @@ function openModal(title, subtitle, items) {
   document.getElementById("modal-title").textContent = title;
   document.getElementById("modal-subtitle").textContent = subtitle;
   const body = document.getElementById("modal-body");
-  let html = '<div class="modal-grid">';
+  const allIds = items.map(function(item) { return item.id; });
+  let html = '<div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">';
+  html += '<button class="copy-all-btn" style="background:var(--accent);border:none;color:#fff;font-family:DM Mono,monospace;font-size:0.62rem;padding:7px 14px;border-radius:6px;cursor:pointer;letter-spacing:0.06em;text-transform:uppercase;transition:all 0.15s;" data-all-ids="'+allIds.join(",")+'">Copy All IDs</button>';
+  html += '<span style="font-size:0.56rem;color:var(--muted);">'+allIds.length+' IDs · comma-separated</span>';
+  html += '</div>';
+  html += '<div class="modal-grid">';
   items.forEach(function(item) {
     html += '<div class="modal-item"><div class="modal-item-info"><div class="modal-item-id">'+item.id+'</div><div class="modal-item-org">'+item.org+'</div>';
     if (item.detail) html += '<div class="modal-item-detail">'+item.detail+'</div>';
@@ -505,42 +510,52 @@ function closeModal() {
 }
 
 function copyId(btn, id) {
-  navigator.clipboard.writeText(id).then(function() {
+  navigator.clipboard.writeText(id + ",").then(function() {
     btn.textContent = "Copied!";
     btn.classList.add("copied");
     setTimeout(function() { btn.textContent = "Copy"; btn.classList.remove("copied"); }, 1500);
   });
 }
 
+function copyAllIds(btn) {
+  var ids = btn.dataset.allIds;
+  var text = ids.split(",").map(function(id) { return id.trim(); }).join(", ");
+  navigator.clipboard.writeText(text).then(function() {
+    btn.textContent = "Copied All!";
+    btn.style.background = "var(--success)";
+    setTimeout(function() { btn.textContent = "Copy All IDs"; btn.style.background = "var(--accent)"; }, 1500);
+  });
+}
+
 function showLateOrders() {
   const rows = filteredCache.cts.filter(function(r) { return r["Days late"] > 0; });
   const seen = new Set(); const deduped = [];
-  rows.forEach(function(r) { if (!seen.has(r["Order ID"])) { seen.add(r["Order ID"]); deduped.push(r); } });
+  rows.forEach(function(r) { var oid = r["Order item ID"]; if (oid && !seen.has(oid)) { seen.add(oid); deduped.push(r); } });
   deduped.sort(function(a,b) { return b["Days late"] - a["Days late"]; });
   const items = deduped.map(function(r) {
-    return { id: r["Order ID"], org: r["Organization name"], detail: Math.round(r["Days late"]) + " days late" };
+    return { id: r["Order item ID"], org: r["Organization name"], detail: Math.round(r["Days late"]) + " days late" };
   });
-  openModal("Late Order IDs", deduped.length + " orders with Days Late > 0", items);
+  openModal("Late Order Item IDs", deduped.length + " order items with Days Late > 0", items);
 }
 
 function showExceptions() {
   const rows = filteredCache.cth.filter(function(r) { return r["Status"] === "Delivery Exception"; });
   const seen = new Set(); const deduped = [];
-  rows.forEach(function(r) { if (!seen.has(r["Order ID"])) { seen.add(r["Order ID"]); deduped.push(r); } });
+  rows.forEach(function(r) { var oid = r["Order item ID"]; if (oid && !seen.has(oid)) { seen.add(oid); deduped.push(r); } });
   const items = deduped.map(function(r) {
-    return { id: r["Order ID"], org: r["Organization name"], detail: "Delivery Exception" };
+    return { id: r["Order item ID"], org: r["Organization name"], detail: "Delivery Exception" };
   });
-  openModal("Delivery Exception Order IDs", deduped.length + " orders with delivery exceptions", items);
+  openModal("Delivery Exception Order Item IDs", deduped.length + " order items with delivery exceptions", items);
 }
 
 function showUnassignedOrdered() {
   const rows = filteredCache.unassigned.filter(function(r) { return r["Item Status"] === "Ordered"; });
   const seen = new Set(); const deduped = [];
-  rows.forEach(function(r) { if (!seen.has(r["Order ID"])) { seen.add(r["Order ID"]); deduped.push(r); } });
+  rows.forEach(function(r) { var oid = r["Order item ID"]; if (oid && !seen.has(oid)) { seen.add(oid); deduped.push(r); } });
   const items = deduped.map(function(r) {
-    return { id: r["Order ID"], org: r["Organization name"], detail: "Ordered — unassigned" };
+    return { id: r["Order item ID"], org: r["Organization name"], detail: "Ordered — unassigned" };
   });
-  openModal("Unassigned Ordered IDs", deduped.length + " unassigned orders with status Ordered", items);
+  openModal("Unassigned Ordered Item IDs", deduped.length + " unassigned order items with status Ordered", items);
 }
 
 // ===== RENDER TABS =====
@@ -551,7 +566,7 @@ function renderCTS() {
   const sc = countBy(rows, "Status");
   const proc = sc["Processing"]||0, ordered = sc["Ordered"]||0;
   const late = rows.filter(function(r) { return r["Days late"] > 0; });
-  var lateIds = new Set(); late.forEach(function(r) { lateIds.add(r["Order ID"]); });
+  var lateIds = new Set(); late.forEach(function(r) { lateIds.add(r["Order item ID"]); });
   var lateUniqueCount = lateIds.size;
   const avgLate = late.length ? (late.reduce(function(s,r) { return s + r["Days late"]; }, 0) / late.length).toFixed(1) : 0;
 
@@ -576,10 +591,10 @@ function renderCTH() {
   const t = rows.length;
   const sc = countBy(rows, "Status");
   const shipped = sc["Shipped"]||0, ofd = sc["Out For Delivery"]||0, exc = sc["Delivery Exception"]||0;
-  var excIds = new Set(); rows.filter(function(r) { return r["Status"] === "Delivery Exception"; }).forEach(function(r) { excIds.add(r["Order ID"]); });
+  var excIds = new Set(); rows.filter(function(r) { return r["Status"] === "Delivery Exception"; }).forEach(function(r) { excIds.add(r["Order item ID"]); });
   var excUniqueCount = excIds.size;
   const late = rows.filter(function(r) { return r["Days late"] > 0; });
-  var lateIds = new Set(); late.forEach(function(r) { lateIds.add(r["Order ID"]); });
+  var lateIds = new Set(); late.forEach(function(r) { lateIds.add(r["Order item ID"]); });
   var lateUniqueCount = lateIds.size;
   const avgLate = late.length ? (late.reduce(function(s,r) { return s + r["Days late"]; }, 0) / late.length).toFixed(1) : 0;
 
@@ -613,7 +628,7 @@ function renderUA() {
   const orgs = new Set(rows.map(function(r) { return r["Organization name"]; }));
   const countries = new Set(rows.map(function(r) { return r["Country code"]; }).filter(Boolean));
 
-  var orderedIds = new Set(); rows.filter(function(r) { return r["Item Status"] === "Ordered"; }).forEach(function(r) { orderedIds.add(r["Order ID"]); });
+  var orderedIds = new Set(); rows.filter(function(r) { return r["Item Status"] === "Ordered"; }).forEach(function(r) { orderedIds.add(r["Order item ID"]); });
   var orderedUniqueCount = orderedIds.size;
 
   document.getElementById("ua-kpi-total").textContent = t;
@@ -676,7 +691,7 @@ function renderDS() {
   const sc = countBy(rows, "Status");
   const ordered = sc["Ordered"]||0;
   const late = rows.filter(function(r) { return r["Days late"] > 0; });
-  var lateIds = new Set(); late.forEach(function(r) { lateIds.add(r["Order ID"]); });
+  var lateIds = new Set(); late.forEach(function(r) { lateIds.add(r["Order item ID"]); });
   var lateUniqueCount = lateIds.size;
   const avgDays = t ? (rows.reduce(function(s,r) { return s + (r["Business days since creation"]||0); }, 0) / t).toFixed(1) : 0;
 
@@ -697,12 +712,12 @@ function renderDS() {
 function showDropshipOrdered() {
   var rows = filteredCache.dropship.filter(function(r) { return r["Days late"] > 0; });
   var seen = new Set(); var deduped = [];
-  rows.forEach(function(r) { if (!seen.has(r["Order ID"])) { seen.add(r["Order ID"]); deduped.push(r); } });
+  rows.forEach(function(r) { var oid = r["Order item ID"]; if (oid && !seen.has(oid)) { seen.add(oid); deduped.push(r); } });
   deduped.sort(function(a,b) { return b["Days late"] - a["Days late"]; });
   var items = deduped.map(function(r) {
-    return { id: r["Order ID"], org: r["Organization name"], detail: Math.round(r["Days late"]) + " days late" };
+    return { id: r["Order item ID"], org: r["Organization name"], detail: Math.round(r["Days late"]) + " days late" };
   });
-  openModal("Late Dropship Order IDs", deduped.length + " orders with Days Late > 0", items);
+  openModal("Late Dropship Order Item IDs", deduped.length + " order items with Days Late > 0", items);
 }
 
 function showInvOrders() {
@@ -713,7 +728,7 @@ function showInvOrders() {
     var days = r["Business Days Until Ship"] != null ? Math.round(r["Business Days Until Ship"]) + " business days until ship" : "";
     return { id: r["Inventory order ID"], org: r["Organization name"], detail: days };
   });
-  openModal("Orders Missing Ship Date", deduped.length + " orders missing expected ship date", items);
+  openModal("Orders Missing Ship Date (Item IDs)", deduped.length + " orders missing expected ship date", items);
 }
 
 function showSdniOrders() {
@@ -724,7 +739,7 @@ function showSdniOrders() {
     var days = r["Business Days Since Created"] != null ? Math.round(r["Business Days Since Created"]) + " business days since created" : "";
     return { id: r["Inventory order ID"], org: r["Organization name"], detail: days };
   });
-  openModal("Orders Without Ship Date", deduped.length + " orders without a ship date", items);
+  openModal("Orders Without Ship Date (Item IDs)", deduped.length + " orders without a ship date", items);
 }
 
 function renderAll() {
@@ -763,7 +778,7 @@ function switchTab(tab) {
   <div class="kpi-row">
     <div class="kpi blue"><div class="kpi-label">Total Orders</div><div class="kpi-value" id="sdni-kpi-total">0</div><div class="kpi-sub">all processing</div></div>
     <div class="kpi orange"><div class="kpi-label">Total Quantity</div><div class="kpi-value" id="sdni-kpi-qty">0</div><div class="kpi-sub">items pending</div></div>
-    <div class="kpi red kpi-clickable" onclick="showSdniOrders()"><div class="kpi-label">Orders Without Ship Date</div><div class="kpi-value" id="sdni-kpi-avgdays">0</div><div class="kpi-sub">orders</div><div class="kpi-click-hint">click to view order IDs</div></div>
+    <div class="kpi red kpi-clickable" onclick="showSdniOrders()"><div class="kpi-label">Orders Without Ship Date</div><div class="kpi-value" id="sdni-kpi-avgdays">0</div><div class="kpi-sub">orders</div><div class="kpi-click-hint">click to view order item IDs</div></div>
     <div class="kpi green"><div class="kpi-label">New Condition</div><div class="kpi-value" id="sdni-kpi-new">0</div><div class="kpi-sub" id="sdni-kpi-new-pct"></div></div>
   </div>
   <div class="grid-2">
@@ -783,7 +798,7 @@ function switchTab(tab) {
   <div class="kpi-row">
     <div class="kpi blue"><div class="kpi-label">Total Orders</div><div class="kpi-value" id="ds-kpi-total">0</div><div class="kpi-sub">across all assignees</div></div>
     <div class="kpi orange"><div class="kpi-label">Ordered</div><div class="kpi-value" id="ds-kpi-ordered">0</div><div class="kpi-sub" id="ds-kpi-ordered-pct"></div></div>
-    <div class="kpi red kpi-clickable" onclick="showDropshipOrdered()"><div class="kpi-label">Late Orders</div><div class="kpi-value" id="ds-kpi-late">0</div><div class="kpi-sub" id="ds-kpi-late-sub"></div><div class="kpi-click-hint">click to view order IDs</div></div>
+    <div class="kpi red kpi-clickable" onclick="showDropshipOrdered()"><div class="kpi-label">Late Orders</div><div class="kpi-value" id="ds-kpi-late">0</div><div class="kpi-sub" id="ds-kpi-late-sub"></div><div class="kpi-click-hint">click to view order item IDs</div></div>
     <div class="kpi green"><div class="kpi-label">Avg Days Since Created</div><div class="kpi-value" id="ds-kpi-avgdays">0</div><div class="kpi-sub">business days</div></div>
   </div>
   <div class="grid-2">
@@ -816,6 +831,8 @@ document.getElementById("orderModal").addEventListener("click", function(e) {
   if (e.target === document.getElementById("orderModal")) closeModal();
 });
 document.getElementById("modal-body").addEventListener("click", function(e) {
+  var copyAllBtn = e.target.closest(".copy-all-btn");
+  if (copyAllBtn) { copyAllIds(copyAllBtn); return; }
   var btn = e.target.closest(".copy-btn");
   if (btn && btn.dataset.oid) copyId(btn, btn.dataset.oid);
 });
