@@ -167,6 +167,7 @@ header { display: flex; align-items: flex-end; justify-content: space-between; m
   <div class="filter-group"><div class="filter-label">Region</div><select class="filter-select" id="g-region"><option value="">All</option></select></div>
   <div class="filter-summary">Showing <span id="g-count">—</span> orders</div>
   <button class="reset-btn" onclick="resetGlobalFilters()">Reset</button>
+  <button class="reset-btn" onclick="clearCachedData()" title="Clear cached CSV data and reload with embedded data" style="border-color:var(--danger);color:var(--danger)">Clear Cache</button>
 </div>
 
 <div class="tab-bar">
@@ -340,7 +341,9 @@ function populateGlobalFilters() {
     osmOrgs.forEach(function(o) { allOrgs.add(o); });
   } else {
     [DATA.clickToShip, DATA.clickToHome, DATA.unassigned, DATA.inventory, DATA2.shipDateNotIncluded, DATA2.dropship].forEach(ds => {
+      if (!Array.isArray(ds)) return;
       ds.forEach(r => {
+        if (!r || typeof r !== "object") return;
         const org = r["Organization name"] || "";
         if (org) allOrgs.add(org);
       });
@@ -356,12 +359,12 @@ function populateGlobalFilters() {
 
   // Region — union of all regions
   const allRegions = new Set();
-  DATA.clickToShip.forEach(r => { if (r["Region code"]) allRegions.add(r["Region code"]); });
-  DATA.clickToHome.forEach(r => { if (r["Region code"]) allRegions.add(r["Region code"]); });
-  DATA.unassigned.forEach(r => { if (r["Country code"]) allRegions.add(r["Country code"]); });
-  DATA.inventory.forEach(r => { if (r["Region code"]) allRegions.add(r["Region code"]); });
-  DATA2.shipDateNotIncluded.forEach(r => { if (r["Region code"]) allRegions.add(r["Region code"]); });
-  DATA2.dropship.forEach(r => { if (r["Country"]) allRegions.add(r["Country"]); });
+  if (Array.isArray(DATA.clickToShip)) DATA.clickToShip.forEach(r => { if (r && r["Region code"]) allRegions.add(r["Region code"]); });
+  if (Array.isArray(DATA.clickToHome)) DATA.clickToHome.forEach(r => { if (r && r["Region code"]) allRegions.add(r["Region code"]); });
+  if (Array.isArray(DATA.unassigned)) DATA.unassigned.forEach(r => { if (r && r["Country code"]) allRegions.add(r["Country code"]); });
+  if (Array.isArray(DATA.inventory)) DATA.inventory.forEach(r => { if (r && r["Region code"]) allRegions.add(r["Region code"]); });
+  if (Array.isArray(DATA2.shipDateNotIncluded)) DATA2.shipDateNotIncluded.forEach(r => { if (r && r["Region code"]) allRegions.add(r["Region code"]); });
+  if (Array.isArray(DATA2.dropship)) DATA2.dropship.forEach(r => { if (r && r["Country"]) allRegions.add(r["Country"]); });
   const regSel = document.getElementById("g-region");
   const curReg = regSel.value;
   while (regSel.options.length > 1) regSel.remove(1);
@@ -725,8 +728,13 @@ function showSdniOrders() {
 }
 
 function renderAll() {
-  renderCTS(); renderCTH(); renderUA(); renderINV(); renderSDNI(); renderDS();
-  updateGlobalCount();
+  try { renderCTS(); } catch(e) { console.error("renderCTS error:", e); }
+  try { renderCTH(); } catch(e) { console.error("renderCTH error:", e); }
+  try { renderUA(); } catch(e) { console.error("renderUA error:", e); }
+  try { renderINV(); } catch(e) { console.error("renderINV error:", e); }
+  try { renderSDNI(); } catch(e) { console.error("renderSDNI error:", e); }
+  try { renderDS(); } catch(e) { console.error("renderDS error:", e); }
+  try { updateGlobalCount(); } catch(e) { console.error("updateGlobalCount error:", e); }
 }
 
 function switchTab(tab) {
@@ -892,23 +900,34 @@ function saveDataToStorage() {
   }
 }
 
+function isValidDataArray(arr) {
+  return Array.isArray(arr) && arr.length > 0 && typeof arr[0] === "object" && arr[0] !== null;
+}
+
 function loadDataFromStorage() {
   try {
     var raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return false;
     var payload = JSON.parse(raw);
-    if (payload.clickToShip && payload.clickToShip.length) DATA.clickToShip = payload.clickToShip;
-    if (payload.clickToHome && payload.clickToHome.length) DATA.clickToHome = payload.clickToHome;
-    if (payload.unassigned && payload.unassigned.length) DATA.unassigned = payload.unassigned;
-    if (payload.inventory && payload.inventory.length) DATA.inventory = payload.inventory;
-    if (payload.shipDateNotIncluded && payload.shipDateNotIncluded.length) DATA2.shipDateNotIncluded = payload.shipDateNotIncluded;
-    if (payload.dropship && payload.dropship.length) DATA2.dropship = payload.dropship;
+    if (!payload || typeof payload !== "object") { console.warn("Invalid localStorage payload, ignoring"); return false; }
+    if (isValidDataArray(payload.clickToShip)) DATA.clickToShip = payload.clickToShip;
+    if (isValidDataArray(payload.clickToHome)) DATA.clickToHome = payload.clickToHome;
+    if (isValidDataArray(payload.unassigned)) DATA.unassigned = payload.unassigned;
+    if (isValidDataArray(payload.inventory)) DATA.inventory = payload.inventory;
+    if (isValidDataArray(payload.shipDateNotIncluded)) DATA2.shipDateNotIncluded = payload.shipDateNotIncluded;
+    if (isValidDataArray(payload.dropship)) DATA2.dropship = payload.dropship;
     console.log("Restored dashboard data from localStorage (saved " + payload.savedAt + ")");
     return true;
   } catch (e) {
-    console.warn("Could not load from localStorage:", e);
+    console.warn("Could not load from localStorage, clearing corrupted cache:", e);
+    try { localStorage.removeItem(STORAGE_KEY); } catch(ex) {}
     return false;
   }
+}
+
+function clearCachedData() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+  location.reload();
 }
 
 function showUploadStatus(elId, msg, isError) {
@@ -984,9 +1003,22 @@ function toggleTheme() {
   renderAll();
 }
 
-loadDataFromStorage();
-populateGlobalFilters();
-renderAll();
+try {
+  loadDataFromStorage();
+} catch(e) {
+  console.warn("loadDataFromStorage failed, using embedded data:", e);
+  try { localStorage.removeItem(STORAGE_KEY); } catch(ex) {}
+}
+try {
+  populateGlobalFilters();
+} catch(e) {
+  console.error("populateGlobalFilters failed:", e);
+}
+try {
+  renderAll();
+} catch(e) {
+  console.error("renderAll failed:", e);
+}
 </script>
 </body>
 </html>
