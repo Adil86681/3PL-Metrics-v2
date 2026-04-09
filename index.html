@@ -1,0 +1,1452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Open Orders Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #eaf0f6; --surface: #ffffff; --surface2: #f3f6fa; --border: #d4dbe5;
+  --text: #1a1d2b; --muted: #6b7484; --accent: #e8546b; --accent2: #1a1d2b;
+  --danger: #d94460; --success: #1e9e5e; --warn: #c4a816;
+}
+[data-theme="light"] {
+  --bg: #2c2f36; --surface: #363940; --surface2: #3e424b; --border: #4e525d;
+  --text: #e2e4e9; --muted: #8e929c; --accent: #e8546b; --accent2: #f0a050;
+  --danger: #f06070; --success: #50d890; --warn: #e8c840;
+}
+/* THEME TOGGLE */
+.theme-toggle { display: flex; align-items: center; gap: 7px; }
+.theme-toggle-label { font-size: 0.58rem; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
+.toggle-track { position: relative; width: 36px; height: 20px; background: var(--accent); border: 1px solid var(--accent); border-radius: 10px; cursor: pointer; transition: background 0.2s; }
+.toggle-track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; background: #fff; border-radius: 50%; transition: transform 0.2s, background 0.2s; }
+[data-theme="light"] .toggle-track { background: var(--accent); border-color: var(--accent); }
+[data-theme="light"] .toggle-track::after { transform: translateX(16px); background: #fff; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "DM Mono", monospace; background: var(--bg); color: var(--text); min-height: 100vh; padding: 24px; }
+
+header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+.header-left h1 { font-family: "Syne", sans-serif; font-weight: 800; font-size: 1.9rem; letter-spacing: -0.02em; }
+.header-left p { font-size: 0.68rem; color: var(--muted); margin-top: 4px; letter-spacing: 0.08em; text-transform: uppercase; }
+.header-right { font-size: 0.68rem; color: var(--muted); text-align: right; line-height: 1.7; }
+
+/* TABS */
+.tab-bar { display: flex; gap: 2px; margin-bottom: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 4px; }
+.tab-btn { flex: 1; padding: 10px 16px; border: none; background: transparent; color: var(--muted); font-family: "Syne", sans-serif; font-weight: 600; font-size: 0.78rem; cursor: pointer; border-radius: 7px; transition: all 0.15s; letter-spacing: 0.02em; }
+.tab-btn.active { background: var(--accent); color: #fff; }
+.tab-btn:not(.active):hover { color: var(--text); background: var(--surface2); }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* FILTER BAR */
+.filter-bar { display: flex; gap: 10px; align-items: flex-end; margin-bottom: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; flex-wrap: wrap; }
+.filter-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 130px; }
+.filter-label { font-size: 0.56rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.filter-select { background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-family: "DM Mono", monospace; font-size: 0.68rem; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
+.filter-select:focus { outline: none; border-color: var(--accent); }
+.filter-summary { font-size: 0.6rem; color: var(--muted); white-space: nowrap; align-self: center; }
+.filter-summary span { color: var(--accent); }
+.reset-btn { background: transparent; border: 1px solid var(--border); color: var(--muted); font-family: "DM Mono", monospace; font-size: 0.6rem; padding: 6px 12px; border-radius: 6px; cursor: pointer; letter-spacing: 0.06em; text-transform: uppercase; transition: all 0.15s; white-space: nowrap; }
+.reset-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* KPIS */
+.kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 14px; }
+.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; position: relative; overflow: hidden; }
+.kpi::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+.kpi.blue::before { background: var(--accent); } .kpi.orange::before { background: var(--accent2); }
+.kpi.red::before { background: var(--danger); } .kpi.green::before { background: var(--success); }
+.kpi-label { font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.kpi-value { font-family: "Syne", sans-serif; font-weight: 800; font-size: 2rem; line-height: 1; letter-spacing: -0.03em; }
+.kpi.blue .kpi-value { color: var(--accent); } .kpi.orange .kpi-value { color: var(--accent2); }
+.kpi.red .kpi-value { color: var(--danger); } .kpi.green .kpi-value { color: var(--success); }
+.kpi-sub { font-size: 0.6rem; color: var(--muted); margin-top: 5px; }
+
+/* GRID */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; }
+.card-title { font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+
+/* DONUT */
+.donut-wrap { display: flex; align-items: center; gap: 18px; }
+.donut-legend { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.legend-item { display: flex; align-items: center; gap: 7px; font-size: 0.68rem; }
+.legend-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+.legend-label { color: var(--muted); flex: 1; } .legend-value { color: var(--text); font-weight: 500; } .legend-pct { color: var(--muted); font-size: 0.6rem; }
+
+/* BARS */
+.bar-list { display: flex; flex-direction: column; gap: 7px; }
+.bar-item { display: flex; align-items: center; gap: 9px; }
+.bar-name { width: 110px; flex-shrink: 0; color: var(--muted); font-size: 0.6rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar-track { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 3px; }
+.bar-val { width: 34px; text-align: right; font-size: 0.66rem; color: var(--text); flex-shrink: 0; }
+
+/* TABLE */
+.data-table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-top: 12px; }
+.data-table { width: 100%; font-size: 0.66rem; border-collapse: collapse; }
+.data-table th { text-align: left; color: var(--muted); font-size: 0.56rem; letter-spacing: 0.08em; text-transform: uppercase; padding: 6px 8px; border-bottom: 1px solid var(--border); font-weight: 400; cursor: pointer; white-space: nowrap; }
+.data-table th:hover { color: var(--accent); }
+.data-table td { padding: 5px 8px; border-bottom: 1px solid var(--border); color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+.table-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 0.6rem; color: var(--muted); }
+.page-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); font-family: "DM Mono", monospace; font-size: 0.6rem; padding: 4px 10px; border-radius: 5px; cursor: pointer; }
+.page-btn:hover { border-color: var(--accent); color: var(--accent); }
+.page-btn:disabled { opacity: 0.3; cursor: default; }
+
+/* STATUS BADGE */
+.status-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.6rem; font-weight: 500; }
+.status-shipped { background: rgba(91,248,162,0.15); color: var(--success); }
+.status-processing { background: rgba(107,112,128,0.2); color: var(--muted); }
+.status-ordered { background: rgba(91,141,248,0.15); color: var(--accent); }
+.status-approved { background: rgba(248,162,91,0.15); color: var(--accent2); }
+.status-ofd { background: rgba(248,162,91,0.15); color: var(--accent2); }
+.status-exception { background: rgba(248,91,122,0.15); color: var(--danger); }
+
+/* EXC TABLE */
+.exc-table { width: 100%; font-size: 0.66rem; border-collapse: collapse; }
+.exc-table th { text-align: left; color: var(--muted); font-size: 0.56rem; letter-spacing: 0.08em; text-transform: uppercase; padding-bottom: 8px; border-bottom: 1px solid var(--border); font-weight: 400; }
+.exc-table td { padding: 5px 0; border-bottom: 1px solid var(--border); color: var(--text); }
+.exc-badge { display: inline-block; background: rgba(248,91,122,0.15); color: var(--danger); border-radius: 4px; padding: 2px 8px; font-size: 0.6rem; }
+
+/* MODAL */
+.modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.modal-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.modal-item-info { flex: 1; min-width: 0; }
+.modal-item-id { font-size: 0.63rem; color: var(--text); font-family: "DM Mono", monospace; word-break: break-all; }
+.modal-item-org { font-size: 0.58rem; color: var(--muted); margin-top: 2px; }
+.modal-item-detail { font-size: 0.56rem; color: var(--danger); margin-top: 2px; }
+.copy-btn { background: var(--surface); border: 1px solid var(--border); color: var(--muted); font-size: 0.55rem; padding: 3px 8px; border-radius: 4px; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: all 0.15s; font-family: "DM Mono", monospace; }
+.copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+.copy-btn.copied { border-color: var(--success); color: var(--success); }
+/* CLICKABLE KPI */
+.kpi-clickable { cursor: pointer; transition: background 0.15s; }
+.kpi-clickable:hover { background: var(--surface2); }
+.kpi-click-hint { font-size: 0.54rem; color: var(--accent); margin-top: 4px; opacity: 0.7; }
+
+/* UPLOAD */
+.upload-bar { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 16px; }
+.upload-bar .upload-label { font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-right: 4px; }
+.upload-btn { background: var(--accent); border: none; color: #fff; font-family: "DM Mono", monospace; font-size: 0.62rem; padding: 7px 14px; border-radius: 6px; cursor: pointer; letter-spacing: 0.06em; text-transform: uppercase; transition: all 0.15s; }
+.upload-btn:hover { background: #4a7ce6; }
+.upload-btn-sm { background: transparent; border: 1px solid var(--border); color: var(--muted); font-family: "DM Mono", monospace; font-size: 0.58rem; padding: 5px 10px; border-radius: 5px; cursor: pointer; letter-spacing: 0.06em; text-transform: uppercase; transition: all 0.15s; }
+.upload-btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+.upload-status { font-size: 0.6rem; color: var(--success); display: none; }
+.upload-status.error { color: var(--danger); }
+.tab-upload { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+.upload-file-input { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>Open Orders Dashboard</h1>
+    <p>All open order items &mdash; live from Firstbase API</p>
+  </div>
+  <div style="display:flex;align-items:center;gap:20px;">
+    <div class="theme-toggle">
+      <span class="theme-toggle-label">Firstbase</span>
+      <div class="toggle-track" id="theme-toggle" onclick="toggleTheme()"></div>
+      <span class="theme-toggle-label">Gray</span>
+    </div>
+    <div class="header-right" id="api-status" style="cursor:pointer" onclick="fetchLiveData()" title="Click to refresh">
+      <span id="status-indicator" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#c4a816;margin-right:5px;vertical-align:middle;"></span>
+      <span id="status-text">Connecting...</span><br>
+      <span id="status-time" style="font-size:0.6rem;"></span>
+    </div>
+  </div>
+</header>
+
+<div class="upload-bar" id="data-bar">
+  <span class="upload-label">Live Data</span>
+  <button class="upload-btn" onclick="fetchLiveData()" id="refresh-btn">Refresh from API</button>
+  <span class="upload-status" id="api-load-status"></span>
+  <span style="flex:1"></span>
+  <span class="upload-label" style="margin-left:12px;">Or upload</span>
+  <button class="upload-btn-sm" onclick="document.getElementById('bulk-upload').click()">Upload CSVs</button>
+  <input type="file" id="bulk-upload" class="upload-file-input" accept=".csv" multiple onchange="handleBulkUpload(this.files)">
+  <span class="upload-status" id="bulk-upload-status"></span>
+</div>
+
+<div class="filter-bar" id="global-filters">
+  <div class="filter-group"><div class="filter-label">Firstbase OSM</div><select class="filter-select" id="g-osm"><option value="">All OSMs</option></select></div>
+  <div class="filter-group"><div class="filter-label">Organization</div><select class="filter-select" id="g-org"><option value="">All</option></select></div>
+  <div class="filter-group"><div class="filter-label">Region</div><select class="filter-select" id="g-region"><option value="">All</option></select></div>
+  <div class="filter-summary">Showing <span id="g-count">—</span> orders</div>
+  <button class="reset-btn" onclick="resetGlobalFilters()">Reset</button>
+  <button class="reset-btn" onclick="clearCachedData()" title="Clear cached CSV data and reload with embedded data" style="border-color:var(--danger);color:var(--danger)">Clear Cache</button>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('cts')">Click To Ship</button>
+  <button class="tab-btn" onclick="switchTab('cth')">Click To Home</button>
+  <button class="tab-btn" onclick="switchTab('unassigned')">Unassigned Orders</button>
+  <button class="tab-btn" onclick="switchTab('inventory')">Missed Expected Ship Date</button>
+  <button class="tab-btn" onclick="switchTab('sdni')">Ship Date Not Included</button>
+  <button class="tab-btn" onclick="switchTab('dropship')">Drop Ship Orders</button>
+</div>
+
+<!-- ====== CLICK TO SHIP ====== -->
+<div class="tab-content active" id="tab-cts">
+  <div class="tab-upload"><button class="upload-btn-sm" onclick="document.getElementById('upload-cts').click()">Upload Click To Ship CSV</button><input type="file" id="upload-cts" class="upload-file-input" accept=".csv" onchange="handleTabUpload('cts', this.files[0])"><span class="upload-status" id="upload-status-cts"></span></div>
+  
+  <div class="kpi-row">
+    <div class="kpi blue"><div class="kpi-label">Total Orders</div><div class="kpi-value" id="cts-kpi-total">0</div><div class="kpi-sub">across all assignees</div></div>
+    <div class="kpi orange"><div class="kpi-label">Processing</div><div class="kpi-value" id="cts-kpi-processing">0</div><div class="kpi-sub" id="cts-kpi-processing-pct"></div></div>
+    <div class="kpi red kpi-clickable" onclick="showLateOrders()"><div class="kpi-label">Late Orders</div><div class="kpi-value" id="cts-kpi-late">0</div><div class="kpi-sub" id="cts-kpi-late-sub"></div><div class="kpi-click-hint">click to view order item IDs</div></div>
+    <div class="kpi green"><div class="kpi-label">Ordered</div><div class="kpi-value" id="cts-kpi-ordered">0</div><div class="kpi-sub" id="cts-kpi-ordered-pct"></div></div>
+  </div>
+  <div class="grid-2">
+    <div class="card"><div class="card-title">Order Status Breakdown</div><div class="donut-wrap"><svg width="100" height="100" id="cts-donut"></svg><div class="donut-legend" id="cts-donut-legend"></div></div></div>
+    <div class="card"><div class="card-title">Top Product Categories</div><div class="bar-list" id="cts-cat-bars"></div></div>
+  </div>
+  <div class="grid-2">
+    <div class="card"><div class="card-title">Orders by Assignee</div><div class="bar-list" id="cts-assignee-bars"></div></div>
+    <div class="card"><div class="card-title">Orders by Region</div><div class="bar-list" id="cts-region-bars"></div></div>
+  </div>
+  <div class="data-table-wrap"><div class="card-title">All Orders</div><div style="overflow-x:auto"><table class="data-table" id="cts-table"></table></div><div class="table-footer"><span id="cts-table-info"></span><div><button class="page-btn" id="cts-prev" onclick="paginate('cts',-1)">&laquo; Prev</button> <button class="page-btn" id="cts-next" onclick="paginate('cts',1)">Next &raquo;</button></div></div></div>
+</div>
+
+<!-- ====== CLICK TO HOME ====== -->
+<div class="tab-content" id="tab-cth">
+  <div class="tab-upload"><button class="upload-btn-sm" onclick="document.getElementById('upload-cth').click()">Upload Click To Home CSV</button><input type="file" id="upload-cth" class="upload-file-input" accept=".csv" onchange="handleTabUpload('cth', this.files[0])"><span class="upload-status" id="upload-status-cth"></span></div>
+  
+  <div class="kpi-row">
+    <div class="kpi blue"><div class="kpi-label">Total Orders</div><div class="kpi-value" id="cth-kpi-total">0</div><div class="kpi-sub">across all assignees</div></div>
+    <div class="kpi orange"><div class="kpi-label">Out for Delivery</div><div class="kpi-value" id="cth-kpi-ofd">0</div><div class="kpi-sub" id="cth-kpi-ofd-pct"></div></div>
+    <div class="kpi red kpi-clickable" onclick="showExceptions()"><div class="kpi-label">Delivery Exceptions</div><div class="kpi-value" id="cth-kpi-exc">0</div><div class="kpi-sub" id="cth-kpi-exc-pct"></div><div class="kpi-click-hint">click to view order item IDs</div></div>
+    <div class="kpi green"><div class="kpi-label">Shipped</div><div class="kpi-value" id="cth-kpi-shipped">0</div><div class="kpi-sub" id="cth-kpi-shipped-pct"></div></div>
+  </div>
+  <div class="grid-2">
+    <div class="card"><div class="card-title">Order Status Breakdown</div><div class="donut-wrap"><svg width="100" height="100" id="cth-donut"></svg><div class="donut-legend" id="cth-donut-legend"></div></div></div>
+    <div class="card"><div class="card-title">Top Product Categories</div><div class="bar-list" id="cth-cat-bars"></div></div>
+  </div>
+  <div class="grid-3">
+    <div class="card"><div class="card-title">Orders by Assignee</div><div class="bar-list" id="cth-assignee-bars"></div></div>
+    <div class="card"><div class="card-title">Late Orders Summary</div>
+      <div style="display:flex;gap:18px;align-items:flex-start;margin-top:4px;">
+        <div><div class="kpi-value" style="color:var(--danger);font-family:Syne,sans-serif;font-size:1.8rem;" id="cth-late-count">0</div><div style="font-size:0.6rem;color:var(--muted);margin-top:4px;">orders are late</div></div>
+        <div><div class="kpi-value" style="color:var(--warn);font-family:Syne,sans-serif;font-size:1.8rem;" id="cth-late-pct">0%</div><div style="font-size:0.6rem;color:var(--muted);margin-top:4px;">of all orders</div></div>
+        <div><div class="kpi-value" style="color:var(--accent2);font-family:Syne,sans-serif;font-size:1.8rem;" id="cth-late-avg">0</div><div style="font-size:0.6rem;color:var(--muted);margin-top:4px;">avg days late</div></div>
+      </div>
+    </div>
+    <div class="card"><div class="card-title">Delivery Exceptions by Org</div><table class="exc-table"><thead><tr><th>Organization</th><th style="text-align:right">Exceptions</th></tr></thead><tbody id="cth-exc-table"></tbody></table></div>
+  </div>
+  <div class="data-table-wrap"><div class="card-title">All Orders</div><div style="overflow-x:auto"><table class="data-table" id="cth-table"></table></div><div class="table-footer"><span id="cth-table-info"></span><div><button class="page-btn" id="cth-prev" onclick="paginate('cth',-1)">&laquo; Prev</button> <button class="page-btn" id="cth-next" onclick="paginate('cth',1)">Next &raquo;</button></div></div></div>
+</div>
+
+<!-- ====== UNASSIGNED ====== -->
+<div class="tab-content" id="tab-unassigned">
+  <div class="tab-upload"><button class="upload-btn-sm" onclick="document.getElementById('upload-unassigned').click()">Upload Unassigned Orders CSV</button><input type="file" id="upload-unassigned" class="upload-file-input" accept=".csv" onchange="handleTabUpload('unassigned', this.files[0])"><span class="upload-status" id="upload-status-unassigned"></span></div>
+  
+  <div class="kpi-row">
+    <div class="kpi blue"><div class="kpi-label">Total Unassigned</div><div class="kpi-value" id="ua-kpi-total">0</div><div class="kpi-sub">orders without assignee</div></div>
+    <div class="kpi orange"><div class="kpi-label">Organizations</div><div class="kpi-value" id="ua-kpi-orgs">0</div><div class="kpi-sub">with unassigned orders</div></div>
+    <div class="kpi red kpi-clickable" onclick="showUnassignedOrdered()"><div class="kpi-label">Ordered</div><div class="kpi-value" id="ua-kpi-ordered">0</div><div class="kpi-sub" id="ua-kpi-ordered-pct"></div><div class="kpi-click-hint">click to view order item IDs</div></div>
+    <div class="kpi green"><div class="kpi-label">Countries</div><div class="kpi-value" id="ua-kpi-countries">0</div><div class="kpi-sub">unique countries</div></div>
+  </div>
+  <div class="grid-3">
+    <div class="card"><div class="card-title">By Organization</div><div class="bar-list" id="ua-org-bars"></div></div>
+    <div class="card"><div class="card-title">By Country</div><div class="bar-list" id="ua-country-bars"></div></div>
+    <div class="card"><div class="card-title">By Status</div><div class="donut-wrap"><svg width="100" height="100" id="ua-donut"></svg><div class="donut-legend" id="ua-donut-legend"></div></div></div>
+  </div>
+  <div class="data-table-wrap"><div class="card-title">All Unassigned Orders</div><div style="overflow-x:auto"><table class="data-table" id="ua-table"></table></div><div class="table-footer"><span id="ua-table-info"></span><div><button class="page-btn" id="ua-prev" onclick="paginate('unassigned',-1)">&laquo; Prev</button> <button class="page-btn" id="ua-next" onclick="paginate('unassigned',1)">Next &raquo;</button></div></div></div>
+</div>
+
+<!-- ====== INVENTORY ====== -->
+<div class="tab-content" id="tab-inventory">
+  <div class="tab-upload"><button class="upload-btn-sm" onclick="document.getElementById('upload-inventory').click()">Upload Missed Expected Ship Date CSV</button><input type="file" id="upload-inventory" class="upload-file-input" accept=".csv" onchange="handleTabUpload('inventory', this.files[0])"><span class="upload-status" id="upload-status-inventory"></span></div>
+  
+  <div class="kpi-row">
+    <div class="kpi blue"><div class="kpi-label">Total Orders</div><div class="kpi-value" id="inv-kpi-total">0</div><div class="kpi-sub">all processing</div></div>
+    <div class="kpi orange"><div class="kpi-label">Total Quantity</div><div class="kpi-value" id="inv-kpi-qty">0</div><div class="kpi-sub">items to ship</div></div>
+    <div class="kpi red kpi-clickable" onclick="showInvOrders()"><div class="kpi-label">Orders Missing Ship Date</div><div class="kpi-value" id="inv-kpi-avgdays">0</div><div class="kpi-sub">orders</div><div class="kpi-click-hint">click to view order item IDs</div></div>
+    <div class="kpi green"><div class="kpi-label">New Condition</div><div class="kpi-value" id="inv-kpi-new">0</div><div class="kpi-sub" id="inv-kpi-new-pct"></div></div>
+  </div>
+  <div class="grid-2">
+    <div class="card"><div class="card-title">By Category</div><div class="bar-list" id="inv-cat-bars"></div></div>
+    <div class="card"><div class="card-title">By Warehouse</div><div class="bar-list" id="inv-wh-bars"></div></div>
+  </div>
+  <div class="grid-2">
+    <div class="card"><div class="card-title">By Organization</div><div class="bar-list" id="inv-org-bars"></div></div>
+    <div class="card"><div class="card-title">By Region</div><div class="bar-list" id="inv-region-bars"></div></div>
+  </div>
+  <div class="data-table-wrap"><div class="card-title">All Inventory Orders</div><div style="overflow-x:auto"><table class="data-table" id="inv-table"></table></div><div class="table-footer"><span id="inv-table-info"></span><div><button class="page-btn" id="inv-prev" onclick="paginate('inventory',-1)">&laquo; Prev</button> <button class="page-btn" id="inv-next" onclick="paginate('inventory',1)">Next &raquo;</button></div></div></div>
+</div>
+
+<script>
+let DATA = {"clickToShip": [], "clickToHome": [], "unassigned": [], "inventory": []};
+let DATA2 = {"shipDateNotIncluded": [], "dropship": []};
+let OSM_MAP = {"Amy Smith": ["3Cloud Solutions", "8th Light", "Akasa", "Apollo Graph", "Beamery", "Benifex", "Cambridge Mobile Telematics", "Cloudflare", "Corelight, Inc", "Cover Genius", "Docebo", "Dutchie", "Fortis Games", "HackerOne", "Houzz", "Lattice", "Mercari", "Mews", "Motion", "Movable Ink", "Mysten Labs", "Neo4j", "New Relic", "Outrider", "Pantheon Systems", "Pax8", "Paxos", "Prometheus", "Replicant", "SeatGeek", "SentinelOne", "Shopmonkey", "Sidecar Health", "Sovos", "Stack Overflow", "Strava", "Sysdig", "The Energy Foundation", "UiPath", "Veramed", "Verint Systems Inc", "Yankee Leisure Group", "YouGov", "evermore"], "Katie Prentice": ["Anyscale", "Archer Faris", "Ashby", "Assent", "Astronomer", "BDS Connected Solutions", "BGB Group", "Binti", "Braze", "Carta", "Coastal Community Bank", "Coinbase", "Cresta", "Crisis24", "Crosby Legal", "Discord", "ECI Software Solutions", "FluidStack", "HackerRank", "Harmonic Security", "Horizon3.ai", "Kraken Robotics", "LogicMonitor", "MaryRuth's", "Mercury", "Momentus", "MoonPay", "OpenSesame", "Pacvue", "Papa", "Permutive", "Phaidra", "Ping Identity", "Postman", "Prenuvo", "QbDVision", "Ramp", "Rithum", "SOCi", "Sift", "SpotOn", "StackAdapt", "Staffbase", "Synthesia", "Tailscale", "True Anomaly", "Velocity Global/Pebl", "Verve", "Wisp", "Wrapbook", "Yext", "York Solutions LLC", "a16z"], "Drea Bosque": ["Abnormal.AI", "Anaplan", "AppDirect", "Atrium", "BallotReady", "Branching Minds", "Brightwheel", "ConcertAI", "Cority", "Corporate Finance Institute", "Digital.ai", "Dotdigital", "Earnest Analytics", "Finfare", "Firstbase", "GAN Integrity", "JumpCloud", "Kinsta", "LastPass", "Life360", "Macabacus", "MedTrainer", "Mindoula", "Nylas", "OnePay", "OneTrust", "Qualtrics", "Refugee Rights", "SandboxAQ", "Sophos", "Spotify", "Sprout Social", "Sterling (FirstAdvantage)", "Sui Foundation", "Tanium", "Teylor", "TheMathCompany", "Typeform", "Varo Bank", "Wise", "Wiz", "ZenBusiness"]};
+
+const COLORS_DARK = ["#e8546b","#1a1d2b","#1e9e5e","#d94460","#c4a816","#7a5195","#4ea8b0","#d63a8c","#5aad2e","#3a7fd5"];
+const COLORS_LIGHT = ["#e8546b","#f0a050","#50d890","#f06070","#e8c840","#a070e0","#50c8d0","#e060a0","#80d050","#50a0e0"];
+const STATUS_COLORS_DARK = {"Shipped":"#1e9e5e","Processing":"#6b7484","Ordered":"#e8546b","Approved":"#1a1d2b","Out For Delivery":"#4ea8b0","Delivery Exception":"#d94460"};
+const STATUS_COLORS_LIGHT = {"Shipped":"#50d890","Processing":"#8e929c","Ordered":"#e8546b","Approved":"#f0a050","Out For Delivery":"#f0a050","Delivery Exception":"#f06070"};
+function isLightTheme() { return document.documentElement.getAttribute("data-theme") === "light"; }
+var COLORS = COLORS_DARK;
+var STATUS_COLORS = STATUS_COLORS_DARK;
+function updateThemeColors() { COLORS = isLightTheme() ? COLORS_LIGHT : COLORS_DARK; STATUS_COLORS = isLightTheme() ? STATUS_COLORS_LIGHT : STATUS_COLORS_DARK; }
+
+// ===== UTILITIES =====
+function countBy(arr, key) {
+  const m = {};
+  arr.forEach(r => { const v = r[key] || "(blank)"; m[v] = (m[v]||0) + 1; });
+  return m;
+}
+function topN(obj, n) {
+  return Object.entries(obj).sort((a,b) => b[1]-a[1]).slice(0, n||8);
+}
+function pct(n, t) { return t ? (n/t*100).toFixed(1)+"%" : "0%"; }
+
+// ===== GLOBAL FILTERS =====
+let currentTab = "cts";
+
+function getGlobalOsmOrgs() {
+  const osm = document.getElementById("g-osm").value;
+  if (!osm) return null;
+  return OSM_MAP[osm] || [];
+}
+
+function filterByOsm(rows, orgKey, osmOrgs) {
+  if (!osmOrgs) return rows;
+  return rows.filter(r => {
+    const org = (r[orgKey] || "").toLowerCase();
+    return osmOrgs.some(m => org.includes(m.toLowerCase()) || m.toLowerCase().includes(org));
+  });
+}
+
+function getGlobalFiltered(dataset, orgKey) {
+  const osmOrgs = getGlobalOsmOrgs();
+  const org = document.getElementById("g-org").value;
+  const region = document.getElementById("g-region").value;
+  let rows = dataset;
+  rows = filterByOsm(rows, orgKey, osmOrgs);
+  if (org) rows = rows.filter(r => r[orgKey] === org);
+  // Region key varies by dataset
+  const regionKey = dataset === DATA.unassigned ? "Country code" : "Region code";
+  if (region) rows = rows.filter(r => r[regionKey] === region);
+  return rows;
+}
+
+function populateGlobalFilters() {
+  // OSM
+  const osmSel = document.getElementById("g-osm");
+  const curOsm = osmSel.value;
+  while (osmSel.options.length > 1) osmSel.remove(1);
+  Object.keys(OSM_MAP).sort().forEach(o => {
+    const opt = document.createElement("option"); opt.value = o; opt.textContent = o; osmSel.appendChild(opt);
+  });
+  if (curOsm && OSM_MAP[curOsm]) osmSel.value = curOsm; else osmSel.value = "";
+
+  // Org — union of all org names, filtered by OSM
+  const osmOrgs = getGlobalOsmOrgs();
+  const allOrgs = new Set();
+  if (osmOrgs) {
+    osmOrgs.forEach(function(o) { allOrgs.add(o); });
+  } else {
+    [DATA.clickToShip, DATA.clickToHome, DATA.unassigned, DATA.inventory, DATA2.shipDateNotIncluded, DATA2.dropship].forEach(ds => {
+      if (!Array.isArray(ds)) return;
+      ds.forEach(r => {
+        if (!r || typeof r !== "object") return;
+        const org = r["Organization name"] || "";
+        if (org) allOrgs.add(org);
+      });
+    });
+  }
+  const orgSel = document.getElementById("g-org");
+  const curOrg = orgSel.value;
+  while (orgSel.options.length > 1) orgSel.remove(1);
+  [...allOrgs].sort().forEach(v => {
+    const opt = document.createElement("option"); opt.value = v; opt.textContent = v; orgSel.appendChild(opt);
+  });
+  if (allOrgs.has(curOrg)) orgSel.value = curOrg; else orgSel.value = "";
+
+  // Region — union of all regions
+  const allRegions = new Set();
+  if (Array.isArray(DATA.clickToShip)) DATA.clickToShip.forEach(r => { if (r && r["Region code"]) allRegions.add(r["Region code"]); });
+  if (Array.isArray(DATA.clickToHome)) DATA.clickToHome.forEach(r => { if (r && r["Region code"]) allRegions.add(r["Region code"]); });
+  if (Array.isArray(DATA.unassigned)) DATA.unassigned.forEach(r => { if (r && r["Country code"]) allRegions.add(r["Country code"]); });
+  if (Array.isArray(DATA.inventory)) DATA.inventory.forEach(r => { if (r && r["Region code"]) allRegions.add(r["Region code"]); });
+  if (Array.isArray(DATA2.shipDateNotIncluded)) DATA2.shipDateNotIncluded.forEach(r => { if (r && r["Region code"]) allRegions.add(r["Region code"]); });
+  if (Array.isArray(DATA2.dropship)) DATA2.dropship.forEach(r => { if (r && r["Country"]) allRegions.add(r["Country"]); });
+  const regSel = document.getElementById("g-region");
+  const curReg = regSel.value;
+  while (regSel.options.length > 1) regSel.remove(1);
+  [...allRegions].sort().forEach(v => {
+    const opt = document.createElement("option"); opt.value = v; opt.textContent = v; regSel.appendChild(opt);
+  });
+  if (allRegions.has(curReg)) regSel.value = curReg; else regSel.value = "";
+}
+
+function resetGlobalFilters() {
+  document.getElementById("g-osm").value = "";
+  document.getElementById("g-org").value = "";
+  document.getElementById("g-region").value = "";
+  populateGlobalFilters();
+  renderAll();
+}
+
+function updateGlobalCount() {
+  const tab = currentTab;
+  const counts = {
+    cts: filteredCache.cts.length,
+    cth: filteredCache.cth.length,
+    unassigned: filteredCache.unassigned.length,
+    inventory: filteredCache.inventory.length,
+    sdni: filteredCache.sdni.length,
+    dropship: filteredCache.dropship.length
+  };
+  document.getElementById("g-count").textContent = counts[tab];
+}
+
+// ===== DONUT =====
+function renderDonut(svgId, legendId, counts, total) {
+  const svg = document.getElementById(svgId);
+  const legend = document.getElementById(legendId);
+  svg.innerHTML = ""; legend.innerHTML = "";
+  const entries = topN(counts, 6);
+  let angle = 0;
+  const cx=50, cy=50, r=40, ir=26;
+  entries.forEach(([name,val],i) => {
+    const slice = (val/total)*Math.PI*2;
+    const x1=cx+r*Math.cos(angle), y1=cy+r*Math.sin(angle);
+    const x2=cx+r*Math.cos(angle+slice), y2=cy+r*Math.sin(angle+slice);
+    const ix1=cx+ir*Math.cos(angle+slice), iy1=cy+ir*Math.sin(angle+slice);
+    const ix2=cx+ir*Math.cos(angle), iy2=cy+ir*Math.sin(angle);
+    const large = slice > Math.PI ? 1 : 0;
+    const color = STATUS_COLORS[name] || COLORS[i%COLORS.length];
+    const path = document.createElementNS("http://www.w3.org/2000/svg","path");
+    path.setAttribute("d","M "+x1+" "+y1+" A "+r+" "+r+" 0 "+large+" 1 "+x2+" "+y2+" L "+ix1+" "+iy1+" A "+ir+" "+ir+" 0 "+large+" 0 "+ix2+" "+iy2+" Z");
+    path.setAttribute("fill", color);
+    svg.appendChild(path);
+    legend.innerHTML += '<div class="legend-item"><div class="legend-dot" style="background:'+color+'"></div><div class="legend-label">'+name+'</div><div class="legend-value">'+val+'</div><div class="legend-pct">'+pct(val,total)+'</div></div>';
+    angle += slice;
+  });
+}
+
+// ===== BARS =====
+function renderBars(elId, counts, n, colorSet) {
+  const el = document.getElementById(elId); el.innerHTML = "";
+  const top = topN(counts, n||8);
+  if (!top.length) { el.innerHTML = '<div style="color:var(--muted);font-size:0.68rem">No data</div>'; return; }
+  const maxV = top[0][1];
+  top.forEach(([name,val],i) => {
+    const color = (colorSet || COLORS)[i % (colorSet || COLORS).length];
+    el.innerHTML += '<div class="bar-item"><div class="bar-name" title="'+name+'">'+name+'</div><div class="bar-track"><div class="bar-fill" style="width:'+(val/maxV)*100+'%;background:'+color+'"></div></div><div class="bar-val">'+val+'</div></div>';
+  });
+}
+
+// ===== DATA TABLE =====
+const PAGE_SIZE = 8;
+const pageState = { cts: 0, cth: 0, unassigned: 0, inventory: 0, sdni: 0, dropship: 0 };
+const filteredCache = { cts: [], cth: [], unassigned: [], inventory: [], sdni: [], dropship: [] };
+
+const TABLE_COLS = {
+  cts: ["Order item ID","Order ID","Organization name","Status","Category","Assigned to","Country","Region code","Days late","SLO","CTS Business Days"],
+  cth: ["Order item ID","Order ID","Organization name","Status","Category","Assigned to","Country","Warehouse name","Days late","CTH Business Days"],
+  unassigned: ["Order item ID","Order ID","Organization name","Item Status","Country code","Product title","Recipient","Created At","Office name"],
+  inventory: ["Inventory order ID","Organization name","Category","Country","Warehouse name","Region code","Quantity","Business Days Until Ship","Condition"],
+  sdni: ["Inventory order ID","Organization name","Category","Country","Warehouse name","Region code","Quantity","Business Days Since Created","Condition"],
+  dropship: ["Order item ID","Order ID","Organization name","Status","Category","Country","Assigned to","Days late","Days since creation","Product title"]
+};
+
+function statusBadge(s) {
+  const cls = {"Shipped":"shipped","Processing":"processing","Ordered":"ordered","Approved":"approved","Out For Delivery":"ofd","Delivery Exception":"exception"};
+  return '<span class="status-badge status-'+(cls[s]||'processing')+'">'+s+'</span>';
+}
+
+function renderTable(tab) {
+  const rows = filteredCache[tab];
+  const cols = TABLE_COLS[tab];
+  const tableIds = {"unassigned":"ua-table","inventory":"inv-table","dropship":"ds-table","sdni":"sdni-table"};
+  const table = document.getElementById(tableIds[tab] || tab + "-table");
+  const page = pageState[tab];
+  const start = page * PAGE_SIZE;
+  const pageRows = rows.slice(start, start + PAGE_SIZE);
+  let html = "<thead><tr>" + cols.map(function(c){return "<th>"+c+"</th>";}).join("") + "</tr></thead><tbody>";
+  pageRows.forEach(function(r) {
+    html += "<tr>" + cols.map(function(c) {
+      const v = r[c] != null ? r[c] : "";
+      if (c === "Status" || c === "Item Status") return "<td>"+statusBadge(v)+"</td>";
+      if (c === "Order item ID" || c === "Order ID" || c === "Inventory order ID") return '<td style="white-space:nowrap"><span title="'+v+'" style="margin-right:4px">'+(v.length>8?v.slice(0,8)+'…':v)+'</span><button class="copy-btn" data-oid="'+v+'">Copy</button></td>';
+      return '<td title="'+v+'">'+v+'</td>';
+    }).join("") + "</tr>";
+  });
+  html += "</tbody>";
+  table.innerHTML = html;
+  const prefixMap = {"unassigned":"ua","inventory":"inv","dropship":"ds","sdni":"sdni"};
+  const prefix = prefixMap[tab] || tab;
+  document.getElementById(prefix + "-table-info").textContent = rows.length ? "Showing "+(start+1)+"-"+Math.min(start+PAGE_SIZE, rows.length)+" of "+rows.length : "No results";
+  document.getElementById(prefix + "-prev").disabled = page === 0;
+  document.getElementById(prefix + "-next").disabled = start + PAGE_SIZE >= rows.length;
+}
+
+function paginate(tab, dir) {
+  pageState[tab] += dir;
+  if (pageState[tab] < 0) pageState[tab] = 0;
+  renderTable(tab);
+}
+
+// ===== MODAL =====
+function openModal(title, subtitle, items) {
+  document.getElementById("modal-title").textContent = title;
+  document.getElementById("modal-subtitle").textContent = subtitle;
+  const body = document.getElementById("modal-body");
+  const allIds = items.map(function(item) { return item.id; });
+  let html = '<div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">';
+  html += '<button class="copy-all-btn" style="background:var(--accent);border:none;color:#fff;font-family:DM Mono,monospace;font-size:0.62rem;padding:7px 14px;border-radius:6px;cursor:pointer;letter-spacing:0.06em;text-transform:uppercase;transition:all 0.15s;" data-all-ids="'+allIds.join(",")+'">Copy All IDs</button>';
+  html += '<span style="font-size:0.56rem;color:var(--muted);">'+allIds.length+' IDs · comma-separated</span>';
+  html += '</div>';
+  html += '<div class="modal-grid">';
+  items.forEach(function(item) {
+    html += '<div class="modal-item"><div class="modal-item-info"><div class="modal-item-id">'+item.id+'</div><div class="modal-item-org">'+item.org+'</div>';
+    if (item.detail) html += '<div class="modal-item-detail">'+item.detail+'</div>';
+    html += '</div><button class="copy-btn" data-oid="'+item.id+'">Copy</button></div>';
+  });
+  html += '</div>';
+  body.innerHTML = html;
+  const modal = document.getElementById("orderModal");
+  modal.style.display = "flex";
+}
+
+function closeModal() {
+  document.getElementById("orderModal").style.display = "none";
+}
+
+function copyId(btn, id) {
+  navigator.clipboard.writeText(id + ",").then(function() {
+    btn.textContent = "Copied!";
+    btn.classList.add("copied");
+    setTimeout(function() { btn.textContent = "Copy"; btn.classList.remove("copied"); }, 1500);
+  });
+}
+
+function copyAllIds(btn) {
+  var ids = btn.dataset.allIds;
+  var text = ids.split(",").map(function(id) { return id.trim(); }).join(", ");
+  navigator.clipboard.writeText(text).then(function() {
+    btn.textContent = "Copied All!";
+    btn.style.background = "var(--success)";
+    setTimeout(function() { btn.textContent = "Copy All IDs"; btn.style.background = "var(--accent)"; }, 1500);
+  });
+}
+
+function showLateOrders() {
+  const rows = filteredCache.cts.filter(function(r) { return r["Days late"] > 0; });
+  const seen = new Set(); const deduped = [];
+  rows.forEach(function(r) { var oid = r["Order item ID"]; if (oid && !seen.has(oid)) { seen.add(oid); deduped.push(r); } });
+  deduped.sort(function(a,b) { return b["Days late"] - a["Days late"]; });
+  const items = deduped.map(function(r) {
+    return { id: r["Order item ID"], org: r["Organization name"], detail: Math.round(r["Days late"]) + " days late" };
+  });
+  openModal("Late Order Item IDs", deduped.length + " order items with Days Late > 0", items);
+}
+
+function showExceptions() {
+  const rows = filteredCache.cth.filter(function(r) { return r["Status"] === "Delivery Exception"; });
+  const seen = new Set(); const deduped = [];
+  rows.forEach(function(r) { var oid = r["Order item ID"]; if (oid && !seen.has(oid)) { seen.add(oid); deduped.push(r); } });
+  const items = deduped.map(function(r) {
+    return { id: r["Order item ID"], org: r["Organization name"], detail: "Delivery Exception" };
+  });
+  openModal("Delivery Exception Order Item IDs", deduped.length + " order items with delivery exceptions", items);
+}
+
+function showUnassignedOrdered() {
+  const rows = filteredCache.unassigned.filter(function(r) { return r["Item Status"] === "Ordered"; });
+  const seen = new Set(); const deduped = [];
+  rows.forEach(function(r) { var oid = r["Order item ID"]; if (oid && !seen.has(oid)) { seen.add(oid); deduped.push(r); } });
+  const items = deduped.map(function(r) {
+    return { id: r["Order item ID"], org: r["Organization name"], detail: "Ordered — unassigned" };
+  });
+  openModal("Unassigned Ordered Item IDs", deduped.length + " unassigned order items with status Ordered", items);
+}
+
+// ===== RENDER TABS =====
+function renderCTS() {
+  let rows = getGlobalFiltered(DATA.clickToShip, "Organization name");
+  filteredCache.cts = rows;
+  const t = rows.length;
+  const sc = countBy(rows, "Status");
+  const proc = sc["Processing"]||0, ordered = sc["Ordered"]||0;
+  const late = rows.filter(function(r) { return r["Days late"] > 0; });
+  var lateIds = new Set(); late.forEach(function(r) { lateIds.add(r["Order item ID"]); });
+  var lateUniqueCount = lateIds.size;
+  const avgLate = late.length ? (late.reduce(function(s,r) { return s + r["Days late"]; }, 0) / late.length).toFixed(1) : 0;
+
+  document.getElementById("cts-kpi-total").textContent = t;
+  document.getElementById("cts-kpi-processing").textContent = proc;
+  document.getElementById("cts-kpi-processing-pct").textContent = pct(proc, t) + " of total";
+  document.getElementById("cts-kpi-late").textContent = lateUniqueCount;
+  document.getElementById("cts-kpi-late-sub").textContent = pct(lateUniqueCount,t) + " · avg " + avgLate + "d late";
+  document.getElementById("cts-kpi-ordered").textContent = ordered;
+  document.getElementById("cts-kpi-ordered-pct").textContent = pct(ordered, t) + " of total";
+
+  renderDonut("cts-donut", "cts-donut-legend", sc, t);
+  renderBars("cts-cat-bars", countBy(rows, "Category"), 8);
+  renderBars("cts-assignee-bars", countBy(rows, "Assigned to"), 7);
+  renderBars("cts-region-bars", countBy(rows, "Region code"), 10);
+  pageState.cts = 0; renderTable("cts");
+}
+
+function renderCTH() {
+  let rows = getGlobalFiltered(DATA.clickToHome, "Organization name");
+  filteredCache.cth = rows;
+  const t = rows.length;
+  const sc = countBy(rows, "Status");
+  const shipped = sc["Shipped"]||0, ofd = sc["Out For Delivery"]||0, exc = sc["Delivery Exception"]||0;
+  var excIds = new Set(); rows.filter(function(r) { return r["Status"] === "Delivery Exception"; }).forEach(function(r) { excIds.add(r["Order item ID"]); });
+  var excUniqueCount = excIds.size;
+  const late = rows.filter(function(r) { return r["Days late"] > 0; });
+  var lateIds = new Set(); late.forEach(function(r) { lateIds.add(r["Order item ID"]); });
+  var lateUniqueCount = lateIds.size;
+  const avgLate = late.length ? (late.reduce(function(s,r) { return s + r["Days late"]; }, 0) / late.length).toFixed(1) : 0;
+
+  document.getElementById("cth-kpi-total").textContent = t;
+  document.getElementById("cth-kpi-ofd").textContent = ofd;
+  document.getElementById("cth-kpi-ofd-pct").textContent = pct(ofd, t) + " of total";
+  document.getElementById("cth-kpi-exc").textContent = excUniqueCount;
+  document.getElementById("cth-kpi-exc-pct").textContent = pct(excUniqueCount, t) + " of total";
+  document.getElementById("cth-kpi-shipped").textContent = shipped;
+  document.getElementById("cth-kpi-shipped-pct").textContent = pct(shipped, t) + " of total";
+  document.getElementById("cth-late-count").textContent = lateUniqueCount;
+  document.getElementById("cth-late-pct").textContent = t ? Math.round(lateUniqueCount/t*100)+"%" : "0%";
+  document.getElementById("cth-late-avg").textContent = avgLate;
+
+  renderDonut("cth-donut", "cth-donut-legend", sc, t);
+  renderBars("cth-cat-bars", countBy(rows, "Category"), 8);
+  renderBars("cth-assignee-bars", countBy(rows, "Assigned to"), 7);
+
+  const excRows = rows.filter(function(r) { return r.Status === "Delivery Exception"; });
+  const excOrgs = topN(countBy(excRows, "Organization name"), 8);
+  const excTable = document.getElementById("cth-exc-table");
+  excTable.innerHTML = excOrgs.length ? excOrgs.map(function(e) { return '<tr><td>'+e[0]+'</td><td style="text-align:right"><span class="exc-badge">'+e[1]+'</span></td></tr>'; }).join("") : '<tr><td colspan="2" style="color:var(--muted)">No exceptions</td></tr>';
+  pageState.cth = 0; renderTable("cth");
+}
+
+function renderUA() {
+  let rows = getGlobalFiltered(DATA.unassigned, "Organization name");
+  filteredCache.unassigned = rows;
+  const t = rows.length;
+  const sc = countBy(rows, "Item Status");
+  const orgs = new Set(rows.map(function(r) { return r["Organization name"]; }));
+  const countries = new Set(rows.map(function(r) { return r["Country code"]; }).filter(Boolean));
+
+  var orderedIds = new Set(); rows.filter(function(r) { return r["Item Status"] === "Ordered"; }).forEach(function(r) { orderedIds.add(r["Order item ID"]); });
+  var orderedUniqueCount = orderedIds.size;
+
+  document.getElementById("ua-kpi-total").textContent = t;
+  document.getElementById("ua-kpi-orgs").textContent = orgs.size;
+  document.getElementById("ua-kpi-ordered").textContent = orderedUniqueCount;
+  document.getElementById("ua-kpi-ordered-pct").textContent = pct(orderedUniqueCount, t) + " of total";
+  document.getElementById("ua-kpi-countries").textContent = countries.size;
+
+  renderBars("ua-org-bars", countBy(rows, "Organization name"), 10);
+  renderBars("ua-country-bars", countBy(rows, "Country code"), 10);
+  renderDonut("ua-donut", "ua-donut-legend", sc, t);
+  pageState.unassigned = 0; renderTable("unassigned");
+}
+
+function renderINV() {
+  let rows = getGlobalFiltered(DATA.inventory, "Organization name");
+  filteredCache.inventory = rows;
+  const t = rows.length;
+  const totalQty = rows.reduce(function(s,r) { return s + (r["Quantity"]||0); }, 0);
+  const newCount = rows.filter(function(r) { return r["Condition"] === "NEW"; }).length;
+
+  document.getElementById("inv-kpi-total").textContent = t;
+  document.getElementById("inv-kpi-qty").textContent = totalQty;
+  document.getElementById("inv-kpi-avgdays").textContent = t;
+  document.getElementById("inv-kpi-new").textContent = newCount;
+  document.getElementById("inv-kpi-new-pct").textContent = pct(newCount, t) + " new condition";
+
+  renderBars("inv-cat-bars", countBy(rows, "Category"), 8);
+  renderBars("inv-wh-bars", countBy(rows, "Warehouse name"), 8);
+  renderBars("inv-org-bars", countBy(rows, "Organization name"), 8);
+  renderBars("inv-region-bars", countBy(rows, "Region code"), 10);
+  pageState.inventory = 0; renderTable("inventory");
+}
+
+
+function renderSDNI() {
+  let rows = getGlobalFiltered(DATA2.shipDateNotIncluded, "Organization name");
+  filteredCache.sdni = rows;
+  const t = rows.length;
+  const totalQty = rows.reduce(function(s,r) { return s + (r["Quantity"]||0); }, 0);
+  const newCount = rows.filter(function(r) { return r["Condition"] === "NEW"; }).length;
+
+  document.getElementById("sdni-kpi-total").textContent = t;
+  document.getElementById("sdni-kpi-qty").textContent = totalQty;
+  document.getElementById("sdni-kpi-avgdays").textContent = t;
+  document.getElementById("sdni-kpi-new").textContent = newCount;
+  document.getElementById("sdni-kpi-new-pct").textContent = pct(newCount, t) + " new condition";
+
+  renderBars("sdni-cat-bars", countBy(rows, "Category"), 8);
+  renderBars("sdni-wh-bars", countBy(rows, "Warehouse name"), 8);
+  renderBars("sdni-org-bars", countBy(rows, "Organization name"), 8);
+  renderBars("sdni-region-bars", countBy(rows, "Region code"), 10);
+  pageState.sdni = 0; renderTable("sdni");
+}
+
+function renderDS() {
+  let rows = getGlobalFiltered(DATA2.dropship, "Organization name");
+  filteredCache.dropship = rows;
+  const t = rows.length;
+  const sc = countBy(rows, "Status");
+  const ordered = sc["Ordered"]||0;
+  const late = rows.filter(function(r) { return r["Days late"] > 0; });
+  var lateIds = new Set(); late.forEach(function(r) { lateIds.add(r["Order item ID"]); });
+  var lateUniqueCount = lateIds.size;
+  const avgDays = t ? (rows.reduce(function(s,r) { return s + (r["Business days since creation"]||0); }, 0) / t).toFixed(1) : 0;
+
+  document.getElementById("ds-kpi-total").textContent = t;
+  document.getElementById("ds-kpi-ordered").textContent = ordered;
+  document.getElementById("ds-kpi-ordered-pct").textContent = pct(ordered, t) + " of total";
+  document.getElementById("ds-kpi-late").textContent = lateUniqueCount;
+  document.getElementById("ds-kpi-late-sub").textContent = lateUniqueCount ? pct(lateUniqueCount,t) + " of total" : "0%";
+  document.getElementById("ds-kpi-avgdays").textContent = avgDays;
+
+  renderBars("ds-org-bars", countBy(rows, "Organization name"), 10);
+  renderBars("ds-cat-bars", countBy(rows, "Category"), 8);
+  renderBars("ds-country-bars", countBy(rows, "Country"), 10);
+  renderDonut("ds-donut", "ds-donut-legend", sc, t);
+  pageState.dropship = 0; renderTable("dropship");
+}
+
+function showDropshipOrdered() {
+  var rows = filteredCache.dropship.filter(function(r) { return r["Days late"] > 0; });
+  var seen = new Set(); var deduped = [];
+  rows.forEach(function(r) { var oid = r["Order item ID"]; if (oid && !seen.has(oid)) { seen.add(oid); deduped.push(r); } });
+  deduped.sort(function(a,b) { return b["Days late"] - a["Days late"]; });
+  var items = deduped.map(function(r) {
+    return { id: r["Order item ID"], org: r["Organization name"], detail: Math.round(r["Days late"]) + " days late" };
+  });
+  openModal("Late Dropship Order Item IDs", deduped.length + " order items with Days Late > 0", items);
+}
+
+function showInvOrders() {
+  var rows = filteredCache.inventory;
+  var seen = new Set(); var deduped = [];
+  rows.forEach(function(r) { var oid = r["Inventory order ID"]; if (oid && !seen.has(oid)) { seen.add(oid); deduped.push(r); } });
+  var items = deduped.map(function(r) {
+    var days = r["Business Days Until Ship"] != null ? Math.round(r["Business Days Until Ship"]) + " business days until ship" : "";
+    return { id: r["Inventory order ID"], org: r["Organization name"], detail: days };
+  });
+  openModal("Orders Missing Ship Date (Item IDs)", deduped.length + " orders missing expected ship date", items);
+}
+
+function showSdniOrders() {
+  var rows = filteredCache.sdni;
+  var seen = new Set(); var deduped = [];
+  rows.forEach(function(r) { var oid = r["Inventory order ID"]; if (oid && !seen.has(oid)) { seen.add(oid); deduped.push(r); } });
+  var items = deduped.map(function(r) {
+    var days = r["Business Days Since Created"] != null ? Math.round(r["Business Days Since Created"]) + " business days since created" : "";
+    return { id: r["Inventory order ID"], org: r["Organization name"], detail: days };
+  });
+  openModal("Orders Without Ship Date (Item IDs)", deduped.length + " orders without a ship date", items);
+}
+
+function renderAll() {
+  try { renderCTS(); } catch(e) { console.error("renderCTS error:", e); }
+  try { renderCTH(); } catch(e) { console.error("renderCTH error:", e); }
+  try { renderUA(); } catch(e) { console.error("renderUA error:", e); }
+  try { renderINV(); } catch(e) { console.error("renderINV error:", e); }
+  try { renderSDNI(); } catch(e) { console.error("renderSDNI error:", e); }
+  try { renderDS(); } catch(e) { console.error("renderDS error:", e); }
+  try { updateGlobalCount(); } catch(e) { console.error("updateGlobalCount error:", e); }
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll(".tab-btn").forEach(function(b,i) { b.classList.toggle("active", ["cts","cth","unassigned","inventory","sdni","dropship"][i] === tab); });
+  document.querySelectorAll(".tab-content").forEach(function(tc) { tc.classList.remove("active"); });
+  document.getElementById("tab-" + tab).classList.add("active");
+  updateGlobalCount();
+}
+
+// ===== EVENT LISTENERS =====
+["g-osm","g-org","g-region"].forEach(function(id) {
+  document.getElementById(id).addEventListener("change", function() {
+    if (id === "g-osm") populateGlobalFilters();
+    renderAll();
+  });
+});
+
+// ===== INIT ===== (deferred to after HTML below)
+</script>
+
+
+<!-- ====== SHIP DATE NOT INCLUDED ====== -->
+<div class="tab-content" id="tab-sdni">
+  <div class="tab-upload"><button class="upload-btn-sm" onclick="document.getElementById('upload-sdni').click()">Upload Ship Date Not Included CSV</button><input type="file" id="upload-sdni" class="upload-file-input" accept=".csv" onchange="handleTabUpload('sdni', this.files[0])"><span class="upload-status" id="upload-status-sdni"></span></div>
+  <div class="kpi-row">
+    <div class="kpi blue"><div class="kpi-label">Total Orders</div><div class="kpi-value" id="sdni-kpi-total">0</div><div class="kpi-sub">all processing</div></div>
+    <div class="kpi orange"><div class="kpi-label">Total Quantity</div><div class="kpi-value" id="sdni-kpi-qty">0</div><div class="kpi-sub">items pending</div></div>
+    <div class="kpi red kpi-clickable" onclick="showSdniOrders()"><div class="kpi-label">Orders Without Ship Date</div><div class="kpi-value" id="sdni-kpi-avgdays">0</div><div class="kpi-sub">orders</div><div class="kpi-click-hint">click to view order item IDs</div></div>
+    <div class="kpi green"><div class="kpi-label">New Condition</div><div class="kpi-value" id="sdni-kpi-new">0</div><div class="kpi-sub" id="sdni-kpi-new-pct"></div></div>
+  </div>
+  <div class="grid-2">
+    <div class="card"><div class="card-title">By Category</div><div class="bar-list" id="sdni-cat-bars"></div></div>
+    <div class="card"><div class="card-title">By Warehouse</div><div class="bar-list" id="sdni-wh-bars"></div></div>
+  </div>
+  <div class="grid-2">
+    <div class="card"><div class="card-title">By Organization</div><div class="bar-list" id="sdni-org-bars"></div></div>
+    <div class="card"><div class="card-title">By Region</div><div class="bar-list" id="sdni-region-bars"></div></div>
+  </div>
+  <div class="data-table-wrap"><div class="card-title">All Orders</div><div style="overflow-x:auto"><table class="data-table" id="sdni-table"></table></div><div class="table-footer"><span id="sdni-table-info"></span><div><button class="page-btn" id="sdni-prev" onclick="paginate('sdni',-1)">&laquo; Prev</button> <button class="page-btn" id="sdni-next" onclick="paginate('sdni',1)">Next &raquo;</button></div></div></div>
+</div>
+
+<!-- ====== DROPSHIP ORDERS ====== -->
+<div class="tab-content" id="tab-dropship">
+  <div class="tab-upload"><button class="upload-btn-sm" onclick="document.getElementById('upload-dropship').click()">Upload Drop Ship Orders CSV</button><input type="file" id="upload-dropship" class="upload-file-input" accept=".csv" onchange="handleTabUpload('dropship', this.files[0])"><span class="upload-status" id="upload-status-dropship"></span></div>
+  <div class="kpi-row">
+    <div class="kpi blue"><div class="kpi-label">Total Orders</div><div class="kpi-value" id="ds-kpi-total">0</div><div class="kpi-sub">across all assignees</div></div>
+    <div class="kpi orange"><div class="kpi-label">Ordered</div><div class="kpi-value" id="ds-kpi-ordered">0</div><div class="kpi-sub" id="ds-kpi-ordered-pct"></div></div>
+    <div class="kpi red kpi-clickable" onclick="showDropshipOrdered()"><div class="kpi-label">Late Orders</div><div class="kpi-value" id="ds-kpi-late">0</div><div class="kpi-sub" id="ds-kpi-late-sub"></div><div class="kpi-click-hint">click to view order item IDs</div></div>
+    <div class="kpi green"><div class="kpi-label">Avg Days Since Created</div><div class="kpi-value" id="ds-kpi-avgdays">0</div><div class="kpi-sub">business days</div></div>
+  </div>
+  <div class="grid-2">
+    <div class="card"><div class="card-title">By Organization</div><div class="bar-list" id="ds-org-bars"></div></div>
+    <div class="card"><div class="card-title">By Category</div><div class="bar-list" id="ds-cat-bars"></div></div>
+  </div>
+  <div class="grid-2">
+    <div class="card"><div class="card-title">By Country</div><div class="bar-list" id="ds-country-bars"></div></div>
+    <div class="card"><div class="card-title">By Status</div><div class="donut-wrap"><svg width="100" height="100" id="ds-donut"></svg><div class="donut-legend" id="ds-donut-legend"></div></div></div>
+  </div>
+  <div class="data-table-wrap"><div class="card-title">All Orders</div><div style="overflow-x:auto"><table class="data-table" id="ds-table"></table></div><div class="table-footer"><span id="ds-table-info"></span><div><button class="page-btn" id="ds-prev" onclick="paginate('dropship',-1)">&laquo; Prev</button> <button class="page-btn" id="ds-next" onclick="paginate('dropship',1)">Next &raquo;</button></div></div></div>
+</div>
+
+<!-- ORDER ID MODAL -->
+<div id="orderModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;width:600px;max-width:95vw;max-height:80vh;display:flex;flex-direction:column;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);">
+      <div>
+        <div style="font-family:Syne,sans-serif;font-weight:700;font-size:1rem;" id="modal-title"></div>
+        <div style="font-size:0.6rem;color:var(--muted);margin-top:3px;" id="modal-subtitle"></div>
+      </div>
+      <button onclick="closeModal()" style="background:none;border:1px solid var(--border);color:var(--muted);font-size:0.9rem;width:28px;height:28px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;">&#x2715;</button>
+    </div>
+    <div style="overflow-y:auto;padding:16px 20px;" id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+document.getElementById("orderModal").addEventListener("click", function(e) {
+  if (e.target === document.getElementById("orderModal")) closeModal();
+});
+document.getElementById("modal-body").addEventListener("click", function(e) {
+  var copyAllBtn = e.target.closest(".copy-all-btn");
+  if (copyAllBtn) { copyAllIds(copyAllBtn); return; }
+  var btn = e.target.closest(".copy-btn");
+  if (btn && btn.dataset.oid) copyId(btn, btn.dataset.oid);
+});
+// ===== CSV PARSING =====
+function parseCSV(text) {
+  var lines = text.split("\n");
+  if (!lines.length) return [];
+  if (lines[0].charCodeAt(0) === 0xFEFF) lines[0] = lines[0].slice(1);
+  var headers = parseCSVLine(lines[0]);
+  var result = [];
+  for (var i = 1; i < lines.length; i++) {
+    var line = lines[i].trim();
+    if (!line) continue;
+    var vals = parseCSVLine(line);
+    var obj = {};
+    for (var j = 0; j < headers.length; j++) {
+      var v = vals[j] || "";
+      var num = Number(v);
+      obj[headers[j]] = (v !== "" && v.trim() !== "" && !isNaN(num) && isFinite(num)) ? num : v;
+    }
+    result.push(obj);
+  }
+  return result;
+}
+function parseCSVLine(line) {
+  var result = []; var current = ""; var inQuotes = false;
+  for (var i = 0; i < line.length; i++) {
+    var ch = line[i];
+    if (inQuotes) {
+      if (ch === '"' && i + 1 < line.length && line[i+1] === '"') { current += '"'; i++; }
+      else if (ch === '"') { inQuotes = false; }
+      else { current += ch; }
+    } else {
+      if (ch === '"') { inQuotes = true; }
+      else if (ch === ",") { result.push(current.trim()); current = ""; }
+      else { current += ch; }
+    }
+  }
+  result.push(current.trim());
+  return result;
+}
+
+// ===== FILE MATCHING =====
+function matchFileToTab(filename) {
+  var fn = filename.toLowerCase();
+  if (fn.includes("missed") && fn.includes("ship")) return "inventory";
+  if (fn.includes("ship date not") || (fn.includes("ship") && fn.includes("not included"))) return "sdni";
+  if (fn.includes("dropship") || fn.includes("drop ship") || (fn.includes("drop") && fn.includes("order"))) return "dropship";
+  if (fn.includes("unassigned")) return "unassigned";
+  if (fn.includes("click") && fn.includes("home")) return "cth";
+  if (fn.includes("click") && fn.includes("ship")) return "cts";
+  return null;
+}
+
+function setTabData(tab, rows) {
+  if (tab === "cts") DATA.clickToShip = rows;
+  else if (tab === "cth") DATA.clickToHome = rows;
+  else if (tab === "unassigned") DATA.unassigned = rows;
+  else if (tab === "inventory") DATA.inventory = rows;
+  else if (tab === "sdni") DATA2.shipDateNotIncluded = rows;
+  else if (tab === "dropship") DATA2.dropship = rows;
+  saveDataToStorage();
+}
+
+// ===== LOCAL STORAGE PERSISTENCE =====
+var STORAGE_KEY = "openOrdersDashboardData";
+
+function saveDataToStorage() {
+  try {
+    var payload = {
+      clickToShip: DATA.clickToShip,
+      clickToHome: DATA.clickToHome,
+      unassigned: DATA.unassigned,
+      inventory: DATA.inventory,
+      shipDateNotIncluded: DATA2.shipDateNotIncluded,
+      dropship: DATA2.dropship,
+      savedAt: new Date().toISOString()
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  } catch (e) {
+    console.warn("Could not save to localStorage:", e);
+  }
+}
+
+function isValidDataArray(arr) {
+  return Array.isArray(arr) && arr.length > 0 && typeof arr[0] === "object" && arr[0] !== null;
+}
+
+function loadDataFromStorage() {
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    var payload = JSON.parse(raw);
+    if (!payload || typeof payload !== "object") { console.warn("Invalid localStorage payload, ignoring"); return false; }
+    if (isValidDataArray(payload.clickToShip)) DATA.clickToShip = payload.clickToShip;
+    if (isValidDataArray(payload.clickToHome)) DATA.clickToHome = payload.clickToHome;
+    if (isValidDataArray(payload.unassigned)) DATA.unassigned = payload.unassigned;
+    if (isValidDataArray(payload.inventory)) DATA.inventory = payload.inventory;
+    if (isValidDataArray(payload.shipDateNotIncluded)) DATA2.shipDateNotIncluded = payload.shipDateNotIncluded;
+    if (isValidDataArray(payload.dropship)) DATA2.dropship = payload.dropship;
+    console.log("Restored dashboard data from localStorage (saved " + payload.savedAt + ")");
+    return true;
+  } catch (e) {
+    console.warn("Could not load from localStorage, clearing corrupted cache:", e);
+    try { localStorage.removeItem(STORAGE_KEY); } catch(ex) {}
+    return false;
+  }
+}
+
+function clearCachedData() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+  location.reload();
+}
+
+function showUploadStatus(elId, msg, isError) {
+  var el = document.getElementById(elId);
+  el.textContent = msg;
+  el.style.display = "inline";
+  el.className = "upload-status" + (isError ? " error" : "");
+  setTimeout(function() { el.style.display = "none"; }, 4000);
+}
+
+// ===== BULK UPLOAD =====
+function handleBulkUpload(files) {
+  if (!files || !files.length) return;
+  var matched = 0; var unmatched = [];
+  var pending = files.length;
+  Array.from(files).forEach(function(file) {
+    var tab = matchFileToTab(file.name);
+    if (!tab) {
+      unmatched.push(file.name);
+      pending--;
+      if (pending === 0) finishBulkUpload(matched, unmatched);
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var rows = parseCSV(e.target.result);
+      setTabData(tab, rows);
+      matched++;
+      pending--;
+      if (pending === 0) finishBulkUpload(matched, unmatched);
+    };
+    reader.readAsText(file);
+  });
+}
+
+function finishBulkUpload(matched, unmatched) {
+  populateGlobalFilters();
+  renderAll();
+  document.getElementById("bulk-upload").value = "";
+  if (unmatched.length) {
+    showUploadStatus("bulk-upload-status", matched + " loaded, " + unmatched.length + " unmatched: " + unmatched.join(", "), true);
+  } else {
+    showUploadStatus("bulk-upload-status", matched + " file(s) loaded successfully", false);
+  }
+}
+
+// ===== PER-TAB UPLOAD =====
+function handleTabUpload(tab, file) {
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var rows = parseCSV(e.target.result);
+    setTabData(tab, rows);
+    populateGlobalFilters();
+    renderAll();
+    showUploadStatus("upload-status-" + tab, rows.length + " rows loaded", false);
+  };
+  reader.onerror = function() {
+    showUploadStatus("upload-status-" + tab, "Error reading file", true);
+  };
+  reader.readAsText(file);
+  document.getElementById("upload-" + tab).value = "";
+}
+// ===== THEME TOGGLE =====
+function toggleTheme() {
+  var html = document.documentElement;
+  if (html.getAttribute("data-theme") === "light") {
+    html.removeAttribute("data-theme");
+  } else {
+    html.setAttribute("data-theme", "light");
+  }
+  updateThemeColors();
+  renderAll();
+}
+
+// ===== FIRSTBASE API INTEGRATION =====
+const API_BASE = ''; // same-origin on Vercel (or localhost for dev)
+let apiConnected = false;
+let schemaCache = null;
+
+function updateStatus(state, text, time) {
+  const ind = document.getElementById("status-indicator");
+  const txt = document.getElementById("status-text");
+  const tm = document.getElementById("status-time");
+  if (state === "ok") { ind.style.background = "#1e9e5e"; }
+  else if (state === "error") { ind.style.background = "#d94460"; }
+  else { ind.style.background = "#c4a816"; }
+  txt.textContent = text;
+  if (time) tm.textContent = time;
+}
+
+async function gql(query, variables) {
+  const resp = await fetch(API_BASE + "/api/graphql", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query, variables })
+  });
+  if (!resp.ok) throw new Error("GraphQL request failed: " + resp.status);
+  return resp.json();
+}
+
+async function introspectSchema() {
+  const query = `{
+    __schema {
+      queryType {
+        fields {
+          name
+          description
+          args { name type { name kind ofType { name kind ofType { name kind } } } }
+          type { name kind ofType { name kind ofType { name kind ofType { name } } } }
+        }
+      }
+    }
+  }`;
+  const result = await gql(query);
+  if (result.data && result.data.__schema) {
+    schemaCache = result.data.__schema.queryType.fields;
+    console.log("[Schema] Available queries:", schemaCache.map(f => f.name));
+    console.log("[Schema] Full schema:", JSON.stringify(schemaCache, null, 2));
+    return schemaCache;
+  }
+  throw new Error("Introspection failed: " + JSON.stringify(result));
+}
+
+// Discover a query by checking schema for matching names
+function findQuery(candidates) {
+  if (!schemaCache) return null;
+  for (const name of candidates) {
+    const found = schemaCache.find(f => f.name.toLowerCase() === name.toLowerCase());
+    if (found) return found;
+  }
+  // Partial match
+  for (const name of candidates) {
+    const found = schemaCache.find(f => f.name.toLowerCase().includes(name.toLowerCase()));
+    if (found) return found;
+  }
+  return null;
+}
+
+// Get the leaf type name of a GraphQL type
+function getTypeName(t) {
+  if (!t) return null;
+  if (t.name && t.kind !== "LIST" && t.kind !== "NON_NULL") return t.name;
+  if (t.ofType) return getTypeName(t.ofType);
+  return t.name;
+}
+
+// Introspect a specific type to get its fields
+async function getTypeFields(typeName) {
+  const query = `{
+    __type(name: "${typeName}") {
+      name
+      fields {
+        name
+        type { name kind ofType { name kind ofType { name kind } } }
+      }
+    }
+  }`;
+  const result = await gql(query);
+  if (result.data && result.data.__type) {
+    return result.data.__type.fields.map(f => f.name);
+  }
+  return [];
+}
+
+// Build a query string for a discovered query, requesting all scalar fields
+async function buildQuery(queryField) {
+  const typeName = getTypeName(queryField.type);
+  if (!typeName) return null;
+
+  const fields = await getTypeFields(typeName);
+  if (!fields.length) return null;
+
+  // Build args string
+  let argsStr = "";
+  const requiredArgs = queryField.args.filter(a => a.type.kind === "NON_NULL");
+  // We'll handle pagination args if they exist
+  const hasFirst = queryField.args.find(a => a.name === "first" || a.name === "limit");
+  const hasOffset = queryField.args.find(a => a.name === "offset" || a.name === "skip");
+
+  if (hasFirst) argsStr += `${hasFirst.name}: 5000`;
+
+  return {
+    queryName: queryField.name,
+    typeName,
+    fields,
+    argsStr,
+    gqlString: `{ ${queryField.name}${argsStr ? "(" + argsStr + ")" : ""} { ${fields.join(" ")} } }`
+  };
+}
+
+// Transform API data to match dashboard field expectations
+function transformOrderData(rows, fieldMap) {
+  return rows.map(row => {
+    const out = {};
+    for (const [dashField, apiField] of Object.entries(fieldMap)) {
+      if (typeof apiField === "function") {
+        out[dashField] = apiField(row);
+      } else if (apiField in row) {
+        out[dashField] = row[apiField];
+      } else {
+        out[dashField] = "";
+      }
+    }
+    return out;
+  });
+}
+
+// Main data fetch function
+async function fetchLiveData() {
+  const btn = document.getElementById("refresh-btn");
+  const statusEl = document.getElementById("api-load-status");
+  btn.disabled = true;
+  btn.textContent = "Loading...";
+  updateStatus("loading", "Fetching...");
+  statusEl.textContent = "";
+  statusEl.style.display = "none";
+
+  try {
+    // Step 1: Check connection
+    const check = await fetch(API_BASE + "/api/token-check");
+    const checkData = await check.json();
+    if (!checkData.ok) throw new Error("Auth failed: " + (checkData.error || "unknown"));
+
+    // Step 2: Introspect schema if not cached
+    if (!schemaCache) {
+      updateStatus("loading", "Discovering schema...");
+      await introspectSchema();
+    }
+
+    // Step 3: Discover available order queries
+    updateStatus("loading", "Fetching orders...");
+
+    // Log all available queries so user can see them
+    console.log("[Dashboard] Looking for order-related queries...");
+    const orderQueries = schemaCache.filter(f =>
+      /order|item|inventory|shipment|dropship/i.test(f.name)
+    );
+    console.log("[Dashboard] Order-related queries found:", orderQueries.map(f => f.name));
+
+    // Try to fetch data from each discovered query
+    let totalLoaded = 0;
+
+    for (const qf of orderQueries) {
+      try {
+        const built = await buildQuery(qf);
+        if (!built) continue;
+
+        console.log(`[Dashboard] Running query: ${built.gqlString.substring(0, 200)}...`);
+        const result = await gql(built.gqlString);
+
+        if (result.data && result.data[built.queryName]) {
+          const rows = Array.isArray(result.data[built.queryName])
+            ? result.data[built.queryName]
+            : (result.data[built.queryName].edges || result.data[built.queryName].nodes || [result.data[built.queryName]]);
+
+          console.log(`[Dashboard] Query "${built.queryName}" returned ${rows.length} rows`);
+          console.log(`[Dashboard] Sample row:`, rows[0]);
+          console.log(`[Dashboard] Available fields:`, Object.keys(rows[0] || {}));
+
+          // Store raw data for mapping
+          window._rawApiData = window._rawApiData || {};
+          window._rawApiData[built.queryName] = rows;
+          totalLoaded += rows.length;
+        }
+      } catch (e) {
+        console.warn(`[Dashboard] Query "${qf.name}" failed:`, e.message);
+      }
+    }
+
+    // Step 4: Try to auto-map data to dashboard tabs
+    autoMapData();
+
+    // Step 5: Render
+    populateGlobalFilters();
+    renderAll();
+
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    apiConnected = true;
+    updateStatus("ok", "Live", "Updated " + timeStr);
+
+    statusEl.textContent = totalLoaded + " records loaded";
+    statusEl.style.display = "inline";
+    statusEl.className = "upload-status";
+
+    // Save to localStorage as cache
+    saveDataToStorage();
+
+  } catch (e) {
+    console.error("[Dashboard] API Error:", e);
+    updateStatus("error", "Offline", e.message);
+    statusEl.textContent = "Error: " + e.message;
+    statusEl.style.display = "inline";
+    statusEl.className = "upload-status error";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Refresh from API";
+  }
+}
+
+// Auto-map raw API data to dashboard data structures
+function autoMapData() {
+  if (!window._rawApiData) return;
+
+  const queryNames = Object.keys(window._rawApiData);
+  console.log("[AutoMap] Attempting to map queries:", queryNames);
+
+  for (const qName of queryNames) {
+    const rows = window._rawApiData[qName];
+    if (!rows.length) continue;
+
+    const fields = Object.keys(rows[0]);
+    const fieldsLower = fields.map(f => f.toLowerCase());
+
+    // Detect which tab this data belongs to based on field patterns
+    const hasShipDate = fieldsLower.some(f => f.includes("ship") && f.includes("date"));
+    const hasTracking = fieldsLower.some(f => f.includes("track"));
+    const hasWarehouse = fieldsLower.some(f => f.includes("warehouse"));
+    const hasAssigned = fieldsLower.some(f => f.includes("assign"));
+    const hasInventoryOrder = fieldsLower.some(f => f.includes("inventory") && f.includes("order"));
+    const hasDropship = fieldsLower.some(f => f.includes("dropship") || qName.toLowerCase().includes("dropship"));
+    const hasStatus = fieldsLower.some(f => f === "status");
+    const hasOrderId = fieldsLower.some(f => f.includes("orderid") || f.includes("order_id") || f.includes("orderitemid"));
+
+    // Build a generic field map that tries common API naming conventions
+    const fieldMap = buildFieldMap(fields);
+
+    // Try to assign to the right tab
+    if (hasDropship) {
+      DATA2.dropship = transformWithFieldMap(rows, fieldMap, "dropship");
+      console.log("[AutoMap] Mapped", rows.length, "rows to Drop Ship Orders");
+    } else if (hasInventoryOrder && hasShipDate) {
+      DATA.inventory = transformWithFieldMap(rows, fieldMap, "inventory");
+      console.log("[AutoMap] Mapped", rows.length, "rows to Missed Expected Ship Date");
+    } else if (hasInventoryOrder && !hasShipDate) {
+      DATA2.shipDateNotIncluded = transformWithFieldMap(rows, fieldMap, "sdni");
+      console.log("[AutoMap] Mapped", rows.length, "rows to Ship Date Not Included");
+    } else if (hasTracking || (hasStatus && fieldsLower.some(f => f.includes("shipped")))) {
+      DATA.clickToHome = transformWithFieldMap(rows, fieldMap, "cth");
+      console.log("[AutoMap] Mapped", rows.length, "rows to Click To Home");
+    } else if (!hasAssigned || qName.toLowerCase().includes("unassigned")) {
+      DATA.unassigned = transformWithFieldMap(rows, fieldMap, "unassigned");
+      console.log("[AutoMap] Mapped", rows.length, "rows to Unassigned Orders");
+    } else {
+      DATA.clickToShip = transformWithFieldMap(rows, fieldMap, "cts");
+      console.log("[AutoMap] Mapped", rows.length, "rows to Click To Ship");
+    }
+  }
+}
+
+// Build a field mapping from API field names to dashboard field names
+function buildFieldMap(apiFields) {
+  const map = {};
+  const lookup = {};
+  apiFields.forEach(f => { lookup[f.toLowerCase().replace(/[_\s]/g, "")] = f; });
+
+  // Common mappings (dashboard field -> possible API field patterns)
+  const patterns = {
+    "Organization name": ["organizationname", "orgname", "organization", "org"],
+    "Order ID": ["orderid", "id"],
+    "Order item ID": ["orderitemid", "itemid"],
+    "Status": ["status", "itemstatus", "orderstatus"],
+    "Country": ["country", "countrycode", "regioncode"],
+    "Category": ["category", "productcategory", "itemcategory"],
+    "Product title": ["producttitle", "productname", "product", "title", "itemname"],
+    "Recipient": ["recipient", "personname", "employeename", "name"],
+    "Assigned to": ["assignedto", "assignee", "warehousename"],
+    "Notes": ["notes", "note", "comments"],
+    "Created at": ["createdat", "createddate", "created"],
+    "Updated at": ["updatedat", "updateddate", "updated"],
+    "Region code": ["regioncode", "region", "country"],
+    "Warehouse name": ["warehousename", "warehouse"],
+    "Condition": ["condition", "itemcondition"],
+    "Quantity": ["quantity", "qty"],
+    "Inventory order ID": ["inventoryorderid", "orderid", "id"],
+    "SLO": ["slo", "servicelevel"],
+    "Days late": ["dayslate", "late", "overdue"],
+    "Approved at": ["approvedat", "approved"],
+    "Shipped At": ["shippedat", "shippeddate", "shipped"],
+    "Tracking link": ["trackinglink", "trackingurl", "tracking"],
+    "Employee start date": ["employeestartdate", "startdate"],
+    "Firstbase supplied": ["firstbasesupplied", "supplied"],
+    "Office name": ["officename", "office"],
+  };
+
+  for (const [dashField, candidates] of Object.entries(patterns)) {
+    for (const candidate of candidates) {
+      if (lookup[candidate]) {
+        map[dashField] = lookup[candidate];
+        break;
+      }
+    }
+  }
+
+  return map;
+}
+
+// Transform rows using a field map, filling in computed fields
+function transformWithFieldMap(rows, fieldMap, tabType) {
+  return rows.map(row => {
+    const out = {};
+
+    // Copy mapped fields
+    for (const [dashField, apiField] of Object.entries(fieldMap)) {
+      out[dashField] = row[apiField] !== undefined ? row[apiField] : "";
+    }
+
+    // Copy any unmapped fields directly (preserving original API field names)
+    for (const [k, v] of Object.entries(row)) {
+      let alreadyMapped = false;
+      for (const apiField of Object.values(fieldMap)) {
+        if (apiField === k) { alreadyMapped = true; break; }
+      }
+      if (!alreadyMapped) out[k] = v;
+    }
+
+    // Compute derived fields
+    out["Open Order Item"] = out["Open Order Item"] || "Open";
+    out["Current Time Local"] = out["Current Time Local"] || new Date().toISOString();
+
+    // Compute "Days late" if not present but we have created date and SLO
+    if (!out["Days late"] && out["Created at"]) {
+      const created = new Date(out["Created at"]);
+      const now = new Date();
+      const diffDays = Math.floor((now - created) / (1000 * 60 * 60 * 24));
+      const slo = Number(out["SLO"]) || 5;
+      const late = diffDays - slo;
+      if (late > 0) out["Days late"] = late;
+    }
+
+    return out;
+  });
+}
+
+// ===== SCHEMA EXPLORER (press Ctrl+Shift+S to open) =====
+document.addEventListener("keydown", function(e) {
+  if (e.ctrlKey && e.shiftKey && e.key === "S") {
+    e.preventDefault();
+    showSchemaExplorer();
+  }
+});
+
+function showSchemaExplorer() {
+  const modal = document.getElementById("orderModal");
+  const title = document.getElementById("modal-title");
+  const subtitle = document.getElementById("modal-subtitle");
+  const body = document.getElementById("modal-body");
+
+  title.textContent = "GraphQL Schema Explorer";
+  subtitle.textContent = "Ctrl+Shift+S to toggle · Raw data in console (window._rawApiData)";
+
+  if (!schemaCache) {
+    body.innerHTML = '<div style="color:var(--muted);font-size:0.7rem;">No schema loaded yet. Click "Refresh from API" first.</div>';
+  } else {
+    let html = '<div style="font-size:0.65rem;font-family:DM Mono,monospace;">';
+    for (const q of schemaCache) {
+      const hasData = window._rawApiData && window._rawApiData[q.name];
+      const badge = hasData ? '<span style="color:var(--success);margin-left:6px;">✓ loaded</span>' : '';
+      html += `<div style="margin-bottom:8px;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;">`;
+      html += `<strong style="color:var(--accent);">${q.name}</strong>${badge}`;
+      if (q.args.length) {
+        html += `<div style="color:var(--muted);margin-top:3px;">args: ${q.args.map(a => a.name).join(", ")}</div>`;
+      }
+      html += `<div style="color:var(--muted);margin-top:2px;">returns: ${getTypeName(q.type) || "?"}</div>`;
+      html += `</div>`;
+    }
+    html += '</div>';
+    body.innerHTML = html;
+  }
+
+  modal.style.display = "flex";
+}
+
+// ===== INIT =====
+try {
+  loadDataFromStorage();
+} catch(e) {
+  console.warn("loadDataFromStorage failed:", e);
+  try { localStorage.removeItem(STORAGE_KEY); } catch(ex) {}
+}
+try {
+  populateGlobalFilters();
+} catch(e) {
+  console.error("populateGlobalFilters failed:", e);
+}
+try {
+  renderAll();
+} catch(e) {
+  console.error("renderAll failed:", e);
+}
+
+// Auto-fetch live data on page load
+setTimeout(fetchLiveData, 500);
+// Auto-refresh every 5 minutes
+setInterval(fetchLiveData, 5 * 60 * 1000);
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "name": "firstbase-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Open Orders Dashboard — live data from Firstbase API",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  }
+}
